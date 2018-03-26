@@ -19,8 +19,11 @@ animate();
 
 function init() {
     console.log("Let's print your first dataset in JS.");
-    var dataset = $.csv.toObjects('D:/git/WebStromProjects/VD_projekt/data/small_dataset.csv');
-    console.log(dataset);
+
+    $.ajax({
+        url: 'data/Adult.csv',
+        dataType: 'text'
+    }).done(successCallback);
 
     var light = new THREE.SpotLight(0xffffff, 1);
     light.position.set(200, 200, 200);
@@ -94,6 +97,23 @@ function computeRadius(depth, count){
         radius = x;
     }
     return radiusArray;
+}
+
+function successCallback(data) {
+    console.log(data);
+    var lines = data.split("\n");
+    var result = [];
+    var headers = lines[0].split(",");
+    for(var i = 1; i < lines.length; i++){
+        var obj = {};
+        var currentLine=lines[i].split(",");
+        for(var j = 0; j < headers.length; j++){
+            obj[headers[j]] = currentLine[j];
+        }
+        result.push(obj);
+    }
+    //return result; //JavaScript object
+    console.log(JSON.stringify(result)); //JSON
 }
 
 
