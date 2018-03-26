@@ -3,7 +3,7 @@ var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
 // Init of the main camera
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-camera.position.set(0, 500, 0);
+camera.position.set(200, 200, 400);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
 // Init of the renderer
 var renderer = new THREE.WebGLRenderer();
@@ -14,27 +14,24 @@ document.body.appendChild(renderer.domElement);
 // The base position of the root node
 var basePosition = new THREE.Vector3(0, 30, 0);
 // The basic radius for the deepest level
-var baseRadius = 20;
+var baseRadius = 100;
 // Distance between 2 levels of the tree
-var levelShift = 100;
-
-init();
-animate();
+var levelShift = 200;
+var delimiter = 500;
+var dataset;
+$.when(csvAjax()).then(init);
 
 function init() {
     console.log("Let's print your first dataset in JS.");
 
-    $.ajax({
-        url: 'data/Adult.csv',
-        dataType: 'text'
-    }).done(successCallback);
+    var counts = getCountsFromDataset();
 
     var light = new THREE.SpotLight(0xffffff, 1);
     light.position.set(200, 200, 200);
     light.castShadow = true;
     scene.add(light);
 
-    var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
+    var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.castShadow = true;
@@ -42,10 +39,10 @@ function init() {
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     scene.add(sphere);
 
-    var depth = 3;
-    var count = 8;
+    var depth = 1;
+    var count = Object.keys(counts["Workclass"]).length;
     var radiusArray = computeRadius(depth, count);
-    generateConeTree(radiusArray, depth, count, sphere.position);
+    generateConeTree(radiusArray, depth, count, sphere.position, counts);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
     // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00 } )
@@ -55,25 +52,25 @@ function init() {
 
     // var helper = new THREE.CameraHelper( light.shadow.camera );
     // scene.add( helper );
+    animate();
 }
 
 function animate() {
     requestAnimationFrame( animate );
-
     renderer.render( scene, camera );
 }
 
-function generateConeTree(radiusArray, depth, count, parentPosition) {
+function generateConeTree(radiusArray, depth, count, parentPosition, counts) {
     var baseAngle = 2 * Math.PI / count;
-    var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
-    for(var i = 0; i < count; i++){
+    for(var obj in counts["Workclass"]){
         var x = radius * Math.cos(angle) + parentPosition.x;
         var z = radius * Math.sin(angle) + parentPosition.z;
         angle += baseAngle;
+        var sphereGeometry = new THREE.SphereBufferGeometry(counts["Workclass"][obj] / delimiter, 32, 32);
         var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.castShadow = true;
         sphere.receiveShadow = false;
@@ -85,7 +82,7 @@ function generateConeTree(radiusArray, depth, count, parentPosition) {
         var line = new THREE.Line( lineGeometry, lineMaterial );
         scene.add(line);
         if(depth > 1) {
-            generateConeTree(radiusArray, depth - 1, count, sphere.position);
+            generateConeTree(radiusArray, depth - 1, count, sphere.position, counts);
         }
     }
 }
@@ -103,8 +100,14 @@ function computeRadius(depth, count){
     return radiusArray;
 }
 
+function csvAjax() {
+    return $.ajax({
+        url: 'data/Adult.csv',
+        dataType: 'text'
+    }).done(successCallback);
+}
+
 function successCallback(data) {
-    console.log(data);
     var lines = data.split("\n");
     var result = [];
     var headers = lines[0].split(",");
@@ -117,9 +120,21 @@ function successCallback(data) {
         result.push(obj);
     }
     //return result; //JavaScript object
-    console.log(JSON.stringify(result)); //JSON
+    dataset = result; //JSON
 }
 
+function getCountsFromDataset() {
+    var json = {"Workclass": {}};
+    for(var i = 0; i < dataset.length; i++){
+        if (json["Workclass"][dataset[i].Workclass] == null){
+            json["Workclass"][dataset[i].Workclass] = 0;
+        }
+        json["Workclass"][dataset[i].Workclass]++;
+    }
+    console.log(json);
+    console.log(JSON.stringify(json));
+    return json;
+}
 
 
 
