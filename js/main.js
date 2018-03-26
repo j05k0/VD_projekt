@@ -1,7 +1,7 @@
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-camera.position.set(150, 400, 350);
+camera.position.set(0, 300, 0);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
@@ -18,6 +18,10 @@ init();
 animate();
 
 function init() {
+    console.log("Let's print your first dataset in JS.");
+    var dataset = $.csv.toObjects('D:/git/WebStromProjects/VD_projekt/data/small_dataset.csv');
+    console.log(dataset);
+
     var light = new THREE.SpotLight(0xffffff, 1);
     light.position.set(200, 200, 200);
     light.castShadow = true;
@@ -31,7 +35,7 @@ function init() {
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     scene.add(sphere);
 
-    var depth = 5;
+    var depth = 3;
     var count = 4;
     var radiusArray = computeRadius(depth, count);
     generateConeTree(radiusArray, depth, count, sphere.position);
