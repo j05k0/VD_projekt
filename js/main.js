@@ -1,18 +1,22 @@
+// Init of the scene
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
+// Init of the main camera
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-camera.position.set(0, 300, 0);
+camera.position.set(0, 500, 0);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
+// Init of the renderer
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+// The base position of the root node
 var basePosition = new THREE.Vector3(0, 30, 0);
 // The basic radius for the deepest level
 var baseRadius = 20;
 // Distance between 2 levels of the tree
-var levelShift = 30;
+var levelShift = 100;
 
 init();
 animate();
@@ -39,7 +43,7 @@ function init() {
     scene.add(sphere);
 
     var depth = 3;
-    var count = 4;
+    var count = 8;
     var radiusArray = computeRadius(depth, count);
     generateConeTree(radiusArray, depth, count, sphere.position);
 
