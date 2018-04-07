@@ -3,7 +3,7 @@ var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
 // Init of the main camera
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-camera.position.set(200, 400, 400);
+camera.position.set(400, 400, 400);
 camera.lookAt(new THREE.Vector3(0, 0, 0));
 // Init of the renderer
 var renderer = new THREE.WebGLRenderer();
@@ -11,28 +11,42 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
 // The base position of the root node
-var basePosition = new THREE.Vector3(0, 300, 0);
+var basePosition = new THREE.Vector3(0, 200, 0);
 // The basic radius for the deepest level
-var baseRadius = 20;
+var baseRadius = 200;
 // Distance between 2 levels of the tree
 var levelShift = 200;
 var delimiter = 500;
 var dataset;
+//deprecated
+var levels = ["Workclass", "Education", "Marital_status"];
+var hierarchy = [];
+
 $.when(csvAjax()).then(init);
 
 function init() {
-    console.log("Let's print your first dataset in JS.");
-
-    var counts = getCountsFromDataset();
+    var counts = {};
+    counts = getCountsFromDataset(counts, 0);
+    for (var item in counts[levels[0]]){
+        hierarchy.push(item);
+        counts[levels[0]][item] = getCountsFromDataset(counts[levels[0]][item], 1);
+        for(var item2 in counts[levels[0]][item][levels[1]]){
+            hierarchy.push(item2);
+            counts[levels[0]][item][levels[1]][item2] = getCountsFromDataset(counts[levels[0]][item][levels[1]][item2], 2);
+            hierarchy.pop(item2);
+        }
+        hierarchy.pop(item);
+    }
 
     var light = new THREE.SpotLight(0xffffff, 1);
     light.position.set(500, 200, 500);
     light.castShadow = true;
     scene.add(light);
 
-    //var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
-    var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
+    var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
+    //var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.castShadow = true;
@@ -40,7 +54,7 @@ function init() {
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     scene.add(sphere);
 
-    var depth = 3;
+    var depth = 1;
     var count = Object.keys(counts["Workclass"]).length;
     var radiusArray = computeRadius(depth, count, counts);
     generateConeTree(radiusArray, depth, count, sphere.position, counts);
@@ -71,8 +85,8 @@ function generateConeTree(radiusArray, depth, count, parentPosition, counts) {
         var x = radius * Math.cos(angle) + parentPosition.x;
         var z = radius * Math.sin(angle) + parentPosition.z;
         angle += baseAngle;
-        //var sphereGeometry = new THREE.SphereBufferGeometry(counts["Workclass"][obj] / delimiter, 32, 32);
-        var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
+        var sphereGeometry = new THREE.SphereBufferGeometry(counts["Workclass"][obj] / delimiter, 32, 32);
+        //var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
         var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.castShadow = true;
         sphere.receiveShadow = false;
@@ -126,16 +140,37 @@ function successCallback(data) {
 }
 
 //TODO add another columns
-function getCountsFromDataset() {
-    var json = {"Workclass": {}};
+function getCountsFromDataset(json, levelId) {
+    json[levels[levelId]] = {};
+    var id = 0;
     for(var i = 0; i < dataset.length; i++){
-        if (json["Workclass"][dataset[i].Workclass] == null){
-            json["Workclass"][dataset[i].Workclass] = 0;
+        if(id === levelId){
+            if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
+                json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
+            }
+            json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
         }
-        json["Workclass"][dataset[i].Workclass]++;
+        else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
+            id++;
+            if (id === levelId) {
+                if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
+                    json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
+                }
+                json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
+            }
+            else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
+                id++;
+                if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
+                    json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
+                }
+                json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
+                id--;
+            }
+            id--;
+        }
     }
     console.log(json);
-    console.log(JSON.stringify(json));
+    // console.log(JSON.stringify(json));
     return json;
 }
 
