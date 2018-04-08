@@ -3,8 +3,8 @@ var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
 // Init of the main camera
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-camera.position.set(800, 800, 800);
-camera.lookAt(new THREE.Vector3(0, -500, 0));
+camera.position.set(2800, 2800, 2800);
+camera.lookAt(new THREE.Vector3(0, -3000, 0));
 // Init of the renderer
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
@@ -18,7 +18,7 @@ var basePosition = new THREE.Vector3(0, 200, 0);
 var baseRadius = 200;
 // Distance between 2 levels of the tree
 var levelShift = 200;
-var delimiter = 500;
+var delimiter = 150;
 var dataset;
 //deprecated
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
@@ -42,12 +42,12 @@ function init() {
     // }
 
     var light = new THREE.SpotLight(0xffffff, 1);
-    light.position.set(900, 600, 900);
+    light.position.set(1900, 1600, 1900);
     light.castShadow = true;
     scene.add(light);
 
-    //var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
-    var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
+    var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
+    //var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.castShadow = true;
@@ -55,11 +55,11 @@ function init() {
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     scene.add(sphere);
 
-    var depth = 2;
+    var depth = 4;
     var count = Object.keys(counts).length;
     //var count = 5;
     var radiusArray = computeRadius(depth, count, counts);
-    generateConeTree(radiusArray, depth, count, sphere.position, counts);
+    generateConeTree(radiusArray, depth, sphere.position, counts);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
     // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00 } )
@@ -80,19 +80,19 @@ function animate() {
     renderer.render( scene, camera );
 }
 
-function generateConeTree(radiusArray, depth, count, parentPosition, counts) {
-    var baseAngle = 2 * Math.PI / count;
+function generateConeTree(radiusArray, depth, parentPosition, json) {
+    var baseAngle = 2 * Math.PI / Object.keys(json).length;
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
-    //for(var obj in counts["Workclass"]){
-    for(var i = 0; i < count; i++){
+    for(var obj in json){
+    //for(var i = 0; i < Object.keys(json).length; i++){
         var x = radius * Math.cos(angle) + parentPosition.x;
         var z = radius * Math.sin(angle) + parentPosition.z;
         angle += baseAngle;
-        //var sphereGeometry = new THREE.SphereBufferGeometry(counts["Workclass"][obj] / delimiter, 32, 32);
-        var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
+        var sphereGeometry = new THREE.SphereBufferGeometry(json[obj]['count'] / delimiter, 32, 32);
+        //var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
         var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.castShadow = true;
         sphere.receiveShadow = false;
@@ -104,7 +104,7 @@ function generateConeTree(radiusArray, depth, count, parentPosition, counts) {
         var line = new THREE.Line( lineGeometry, lineMaterial );
         scene.add(line);
         if(depth > 1) {
-            generateConeTree(radiusArray, depth - 1, count, sphere.position, counts);
+            generateConeTree(radiusArray, depth - 1, sphere.position, json[obj]);
         }
     }
 }
