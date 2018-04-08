@@ -21,7 +21,8 @@ var levelShift = 200;
 var delimiter = 500;
 var dataset;
 //deprecated
-var levels = ["Workclass", "Education", "Marital_status"];
+var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
+    "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
 var hierarchy = [];
 
 $.when(csvAjax()).then(init);
@@ -29,16 +30,16 @@ $.when(csvAjax()).then(init);
 function init() {
     var counts = {};
     counts = getCountsFromDataset(counts, 0);
-    for (var item in counts[levels[0]]){
-        hierarchy.push(item);
-        counts[levels[0]][item] = getCountsFromDataset(counts[levels[0]][item], 1);
-        for(var item2 in counts[levels[0]][item][levels[1]]){
-            hierarchy.push(item2);
-            counts[levels[0]][item][levels[1]][item2] = getCountsFromDataset(counts[levels[0]][item][levels[1]][item2], 2);
-            hierarchy.pop(item2);
-        }
-        hierarchy.pop(item);
-    }
+    // for (var item in counts[levels[0]]){
+    //     hierarchy.push(item);
+    //     counts[levels[0]][item] = getCountsFromDataset(counts[levels[0]][item], 1);
+    //     for(var item2 in counts[levels[0]][item][levels[1]]){
+    //         hierarchy.push(item2);
+    //         counts[levels[0]][item][levels[1]][item2] = getCountsFromDataset(counts[levels[0]][item][levels[1]][item2], 2);
+    //         hierarchy.pop(item2);
+    //     }
+    //     hierarchy.pop(item);
+    // }
 
     var light = new THREE.SpotLight(0xffffff, 1);
     light.position.set(500, 200, 500);
@@ -141,33 +142,110 @@ function successCallback(data) {
 
 //TODO add another columns
 function getCountsFromDataset(json, levelId) {
-    json[levels[levelId]] = {};
+    //json[levels[levelId]] = {};
+    json = {};
     var id = 0;
     for(var i = 0; i < dataset.length; i++){
-        if(id === levelId){
-            if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
-                json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
-            }
-            json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
+        // if(id === levelId){
+        //     if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
+        //         json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
+        //     }
+        //     json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
+        // }
+        // else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
+        //     id++;
+        //     if (id === levelId) {
+        //         if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
+        //             json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
+        //         }
+        //         json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
+        //     }
+        //     else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
+        //         id++;
+        //         if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
+        //             json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
+        //         }
+        //         json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
+        //         id--;
+        //     }
+        //     id--;
+        // }
+        id = 0;
+        if(json[dataset[i][levels[id]]] == null){
+            json[dataset[i][levels[id]]] = {'count': 0};
         }
-        else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
-            id++;
-            if (id === levelId) {
-                if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
-                    json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
-                }
-                json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
-            }
-            else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
-                id++;
-                if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
-                    json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
-                }
-                json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
-                id--;
-            }
-            id--;
+        json[dataset[i][levels[id]]]['count']++;
+
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
         }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+            id = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = 0;
+        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]++;
     }
     console.log(json);
     // console.log(JSON.stringify(json));
