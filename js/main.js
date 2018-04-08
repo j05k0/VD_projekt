@@ -3,8 +3,8 @@ var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
 // Init of the main camera
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
-camera.position.set(400, 400, 400);
-camera.lookAt(new THREE.Vector3(0, 0, 0));
+camera.position.set(800, 800, 800);
+camera.lookAt(new THREE.Vector3(0, -500, 0));
 // Init of the renderer
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
@@ -42,12 +42,12 @@ function init() {
     // }
 
     var light = new THREE.SpotLight(0xffffff, 1);
-    light.position.set(500, 200, 500);
+    light.position.set(900, 600, 900);
     light.castShadow = true;
     scene.add(light);
 
-    var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
-    //var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
+    //var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
+    var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.castShadow = true;
@@ -55,8 +55,9 @@ function init() {
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     scene.add(sphere);
 
-    var depth = 1;
-    var count = Object.keys(counts["Workclass"]).length;
+    var depth = 2;
+    var count = Object.keys(counts).length;
+    //var count = 5;
     var radiusArray = computeRadius(depth, count, counts);
     generateConeTree(radiusArray, depth, count, sphere.position, counts);
 
@@ -68,6 +69,9 @@ function init() {
 
     // var helper = new THREE.CameraHelper( light.shadow.camera );
     // scene.add( helper );
+
+    // createMenu();
+
     animate();
 }
 
@@ -82,12 +86,13 @@ function generateConeTree(radiusArray, depth, count, parentPosition, counts) {
     var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
-    for(var obj in counts["Workclass"]){
+    //for(var obj in counts["Workclass"]){
+    for(var i = 0; i < count; i++){
         var x = radius * Math.cos(angle) + parentPosition.x;
         var z = radius * Math.sin(angle) + parentPosition.z;
         angle += baseAngle;
-        var sphereGeometry = new THREE.SphereBufferGeometry(counts["Workclass"][obj] / delimiter, 32, 32);
-        //var sphereGeometry = new THREE.SphereBufferGeometry(5, 32, 32);
+        //var sphereGeometry = new THREE.SphereBufferGeometry(counts["Workclass"][obj] / delimiter, 32, 32);
+        var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
         var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
         sphere.castShadow = true;
         sphere.receiveShadow = false;
@@ -140,36 +145,11 @@ function successCallback(data) {
     dataset = result; //JSON
 }
 
-//TODO add another columns
-function getCountsFromDataset(json, levelId) {
+function getCountsFromDataset(json) {
     //json[levels[levelId]] = {};
     json = {};
     var id = 0;
     for(var i = 0; i < dataset.length; i++){
-        // if(id === levelId){
-        //     if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
-        //         json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
-        //     }
-        //     json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
-        // }
-        // else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
-        //     id++;
-        //     if (id === levelId) {
-        //         if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
-        //             json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
-        //         }
-        //         json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
-        //     }
-        //     else if(id < levelId && dataset[i][levels[id]] === hierarchy[id]){
-        //         id++;
-        //         if (json[levels[levelId]][dataset[i][levels[levelId]]] == null) {
-        //             json[levels[levelId]][dataset[i][levels[levelId]]] = {'count': 0};
-        //         }
-        //         json[levels[levelId]][dataset[i][levels[levelId]]]['count']++;
-        //         id--;
-        //     }
-        //     id--;
-        // }
         id = 0;
         if(json[dataset[i][levels[id]]] == null){
             json[dataset[i][levels[id]]] = {'count': 0};
@@ -252,7 +232,37 @@ function getCountsFromDataset(json, levelId) {
     return json;
 }
 
+function createMenu() {
+    var obj = {
+        message: 'Hello World',
+        displayOutline: false,
+        maxSize: 6.0,
+        speed: 5,
+        height: 10,
+        noiseStrength: 10.2,
+        growthSpeed: 0.2,
+        type: 'three',
+        explode: function () {
+            alert('Bang!');
+        },
+        color0: "#ffae23", // CSS string
+        color1: [ 0, 128, 255 ], // RGB array
+        color2: [ 0, 128, 255, 0.3 ], // RGB with alpha
+        color3: { h: 350, s: 0.9, v: 0.3 } // Hue, saturation, value
+    };
 
+    var gui = new dat.gui.GUI();
+    gui.add(obj, 'message');
+    gui.add(obj, 'displayOutline');
+    gui.add(obj, 'explode');
+
+    gui.add(obj, 'maxSize').min(-10).max(10).step(0.25);
+    gui.add(obj, 'height').step(5); // Increment amount
+    // Choose from accepted values
+    gui.add(obj, 'type', [ 'one', 'two', 'three' ] );
+    // Choose from named values
+    gui.add(obj, 'speed', { Stopped: 0, Slow: 0.1, Fast: 5 } );
+}
 
 
 
