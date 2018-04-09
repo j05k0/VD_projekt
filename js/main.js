@@ -2,7 +2,7 @@
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
 // Init of the main camera
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200000);
 camera.position.set(2800, 2800, 2800);
 camera.lookAt(new THREE.Vector3(0, -3000, 0));
 // Init of the renderer
@@ -11,13 +11,64 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+//Controls for moving of camera
+var controls = new THREE.OrbitControls( camera, renderer.domElement );
+controls.panningMode = THREE.HorizontalPanning;
+//Raycaster for clickable objects
+var objects = [];
+var raycaster = new THREE.Raycaster();
+var mouse = new THREE.Vector2();
+document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+
+function onDocumentTouchStart( event ) {
+
+    event.preventDefault();
+
+    event.clientX = event.touches[0].clientX;
+    event.clientY = event.touches[0].clientY;
+    onDocumentMouseDown( event );
+
+}
+
+function onDocumentMouseDown( event ) {
+
+    event.preventDefault();
+
+    mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+    raycaster.setFromCamera( mouse, camera );
+
+    var intersects = raycaster.intersectObjects( objects );
+
+    if ( intersects.length > 0 ) {
+
+        intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
+
+        // var particle = new THREE.Sprite( particleMaterial );
+        // particle.position.copy( intersects[ 0 ].point );
+        // particle.scale.x = particle.scale.y = 16;
+        // scene.add( particle );
+
+    }
+
+    /*
+    // Parse all the faces
+    for ( var i in intersects ) {
+
+        intersects[ i ].face.material[ 0 ].color.setHex( Math.random() * 0xffffff | 0x80000000 );
+
+    }
+    */
+}
 
 // The base position of the root node
 var basePosition = new THREE.Vector3(0, 200, 0);
 // The basic radius for the deepest level
 var baseRadius = 200;
 // Distance between 2 levels of the tree
-var levelShift = 200;
+var levelShift = 2000;
 var delimiter = 150;
 var dataset;
 //deprecated
@@ -42,7 +93,7 @@ function init() {
     // }
 
     var light = new THREE.SpotLight(0xffffff, 1);
-    light.position.set(1900, 1600, 1900);
+    light.position.set(19000, 16000, 19000);
     light.castShadow = true;
     scene.add(light);
 
@@ -54,11 +105,12 @@ function init() {
     sphere.receiveShadow = false;
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     scene.add(sphere);
+    objects.push(sphere);
 
-    var depth = 4;
-    var count = Object.keys(counts).length;
+    var depth = 3;
+    var count = Object.keys(counts).length - 1;
     //var count = 5;
-    var radiusArray = computeRadius(depth, count, counts);
+    var radiusArray = computeRadius(depth, count);
     generateConeTree(radiusArray, depth, sphere.position, counts);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
@@ -81,35 +133,38 @@ function animate() {
 }
 
 function generateConeTree(radiusArray, depth, parentPosition, json) {
-    var baseAngle = 2 * Math.PI / Object.keys(json).length;
+    var baseAngle = 2 * Math.PI / (Object.keys(json).length - 1);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
     for(var obj in json){
     //for(var i = 0; i < Object.keys(json).length; i++){
-        var x = radius * Math.cos(angle) + parentPosition.x;
-        var z = radius * Math.sin(angle) + parentPosition.z;
-        angle += baseAngle;
-        var sphereGeometry = new THREE.SphereBufferGeometry(json[obj]['count'] / delimiter, 32, 32);
-        //var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
-        var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        sphere.castShadow = true;
-        sphere.receiveShadow = false;
-        sphere.position.set(x, parentPosition.y - levelShift, z);
-        scene.add(sphere);
-        var lineGeometry = new THREE.Geometry();
-        lineGeometry.vertices.push(parentPosition);
-        lineGeometry.vertices.push(sphere.position);
-        var line = new THREE.Line( lineGeometry, lineMaterial );
-        scene.add(line);
-        if(depth > 1) {
-            generateConeTree(radiusArray, depth - 1, sphere.position, json[obj]);
+        if (obj !== 'count') {
+            var x = radius * Math.cos(angle) + parentPosition.x;
+            var z = radius * Math.sin(angle) + parentPosition.z;
+            angle += baseAngle;
+            var sphereGeometry = new THREE.SphereBufferGeometry(json[obj]['count'] / delimiter, 32, 32);
+            //var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
+            var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            sphere.castShadow = true;
+            sphere.receiveShadow = false;
+            sphere.position.set(x, parentPosition.y - levelShift, z);
+            scene.add(sphere);
+            objects.push(sphere);
+            var lineGeometry = new THREE.Geometry();
+            lineGeometry.vertices.push(parentPosition);
+            lineGeometry.vertices.push(sphere.position);
+            var line = new THREE.Line(lineGeometry, lineMaterial);
+            scene.add(line);
+            if (depth > 1) {
+                generateConeTree(radiusArray, depth - 1, sphere.position, json[obj]);
+            }
         }
     }
 }
 
-function computeRadius(depth, count, counts){
+function computeRadius(depth, count){
     var radiusArray = [];
     var baseAngle = 2 * Math.PI / count / 2;
     var radius = baseRadius;
@@ -147,7 +202,7 @@ function successCallback(data) {
 
 function getCountsFromDataset(json) {
     //json[levels[levelId]] = {};
-    json = {};
+    json = {'count': dataset.length};
     var id = 0;
     for(var i = 0; i < dataset.length; i++){
         id = 0;
