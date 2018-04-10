@@ -15,53 +15,66 @@ document.body.appendChild(renderer.domElement);
 var controls = new THREE.OrbitControls( camera, renderer.domElement );
 controls.panningMode = THREE.HorizontalPanning;
 //Raycaster for clickable objects
-var objects = [];
+// var objects = [];
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
 document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
 function onDocumentTouchStart( event ) {
-
     event.preventDefault();
-
     event.clientX = event.touches[0].clientX;
     event.clientY = event.touches[0].clientY;
     onDocumentMouseDown( event );
-
 }
 
 function onDocumentMouseDown( event ) {
-
     event.preventDefault();
-
     mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
     mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
-
     raycaster.setFromCamera( mouse, camera );
-
-    var intersects = raycaster.intersectObjects( objects );
-
+    var intersects = raycaster.intersectObjects( scene.children );
     if ( intersects.length > 0 ) {
-
-        intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
-
+        intersects[0].object.material.color.setHex( Math.random() * 0xffffff );
         // var particle = new THREE.Sprite( particleMaterial );
         // particle.position.copy( intersects[ 0 ].point );
         // particle.scale.x = particle.scale.y = 16;
         // scene.add( particle );
-
     }
-
     /*
     // Parse all the faces
     for ( var i in intersects ) {
-
         intersects[ i ].face.material[ 0 ].color.setHex( Math.random() * 0xffffff | 0x80000000 );
-
     }
     */
 }
+
+function onDocumentMouseMove( event ) {
+    event.preventDefault();
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    raycaster.setFromCamera( mouse, camera );
+    var intersects = raycaster.intersectObjects( scene.children );
+    if ( intersects.length > 0 ) {
+        // Get the modal
+        var modal = document.getElementById('myModal');
+        // Get the <span> element that closes the modal
+        var span = document.getElementsByClassName("close")[0];
+        // When the user clicks on <span> (x), close the modal
+        span.onclick = function() {
+            modal.style.display = "none";
+        };
+        modal.style.display = "block";
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    }
+}
+
+
 
 // The base position of the root node
 var basePosition = new THREE.Vector3(0, 200, 0);
@@ -105,7 +118,7 @@ function init() {
     sphere.receiveShadow = false;
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     scene.add(sphere);
-    objects.push(sphere);
+    // objects.push(sphere);
 
     var depth = 3;
     var count = Object.keys(counts).length - 1;
@@ -134,8 +147,6 @@ function animate() {
 
 function generateConeTree(radiusArray, depth, parentPosition, json) {
     var baseAngle = 2 * Math.PI / (Object.keys(json).length - 1);
-    var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
-    var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
     for(var obj in json){
@@ -146,12 +157,14 @@ function generateConeTree(radiusArray, depth, parentPosition, json) {
             angle += baseAngle;
             var sphereGeometry = new THREE.SphereBufferGeometry(json[obj]['count'] / delimiter, 32, 32);
             //var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
+            var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
+            var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
             var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphere.castShadow = true;
             sphere.receiveShadow = false;
             sphere.position.set(x, parentPosition.y - levelShift, z);
             scene.add(sphere);
-            objects.push(sphere);
+            // objects.push(sphere);
             var lineGeometry = new THREE.Geometry();
             lineGeometry.vertices.push(parentPosition);
             lineGeometry.vertices.push(sphere.position);
