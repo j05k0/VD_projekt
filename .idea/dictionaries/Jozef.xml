@@ -2,7 +2,10 @@
   <dictionary name="Jozef">
     <words>
       <w>dataset</w>
+      <w>mousedown</w>
+      <w>mousemove</w>
       <w>raycaster</w>
+      <w>touchstart</w>
     </words>
   </dictionary>
 </component>

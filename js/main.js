@@ -1,45 +1,69 @@
 // Init of the scene
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
+
 // Init of the main camera
 var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200000);
 camera.position.set(2800, 2800, 2800);
 camera.lookAt(new THREE.Vector3(0, -3000, 0));
+
 // Init of the renderer
 var renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
 //Controls for moving of camera
 var controls = new THREE.OrbitControls( camera, renderer.domElement );
 controls.panningMode = THREE.HorizontalPanning;
+
 //Raycaster for clickable objects
-// var objects = [];
 var raycaster = new THREE.Raycaster();
 var mouse = new THREE.Vector2();
+
+// Get the modal and its content
+var modal = document.getElementById('myModal');
+var modalContent = document.getElementById('myModalContent');
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = function() {
+    modal.style.display = "none";
+};
+
+//When user clicks outside of modal, close the modal
+window.onclick = function(event) {
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+};
+
+//Initialization of listeners
 document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 document.addEventListener( 'touchstart', onDocumentTouchStart, false );
 document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
 // The base position of the root node
 var basePosition = new THREE.Vector3(0, 200, 0);
+
 // The basic radius for the deepest level
 var baseRadius = 200;
+
 // Distance between 2 levels of the tree
 var levelShift = 2000;
 var delimiter = 150;
 var dataset;
-//deprecated
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
     "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
-var hierarchy = [];
 
 $.when(csvAjax()).then(init);
 
 //functions
 function onDocumentTouchStart( event ) {
-    event.preventDefault();
+    event.preventDefault();q
     event.clientX = event.touches[0].clientX;
     event.clientY = event.touches[0].clientY;
     onDocumentMouseDown( event );
@@ -52,43 +76,19 @@ function onDocumentMouseDown( event ) {
     raycaster.setFromCamera( mouse, camera );
     var intersects = raycaster.intersectObjects( scene.children );
     if ( intersects.length > 0 ) {
-        intersects[0].object.material.color.setHex( Math.random() * 0xffffff );
-        // var particle = new THREE.Sprite( particleMaterial );
-        // particle.position.copy( intersects[ 0 ].point );
-        // particle.scale.x = particle.scale.y = 16;
-        // scene.add( particle );
+        intersects[0].object.material.color.setHex(0x0000ff);
     }
-    /*
-    // Parse all the faces
-    for ( var i in intersects ) {
-        intersects[ i ].face.material[ 0 ].color.setHex( Math.random() * 0xffffff | 0x80000000 );
-    }
-    */
 }
 
 function onDocumentMouseMove( event ) {
     event.preventDefault();
     mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
     mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-    // Get the modal
-    var modal = document.getElementById('myModal');
-    var modalContent = document.getElementById('myModalContent');
-    // Get the <span> element that closes the modal
-    var span = document.getElementsByClassName("close")[0];
     raycaster.setFromCamera( mouse, camera );
     var intersects = raycaster.intersectObjects( scene.children );
     if ( intersects.length > 0 ) {
-        modalContent.innerHTML = intersects[0].object['name'];
-        // When the user clicks on <span> (x), close the modal
-        span.onclick = function() {
-            modal.style.display = "none";
-        };
+        modalContent.innerHTML = intersects[0].object['name'] + '<br/>' + intersects[0].object['count'];
         modal.style.display = "block";
-        window.onclick = function(event) {
-            if (event.target === modal) {
-                modal.style.display = "none";
-            }
-        }
     }
     else{
         modal.style.display = "none";
@@ -98,16 +98,6 @@ function onDocumentMouseMove( event ) {
 function init() {
     var counts = {};
     counts = getCountsFromDataset(counts, 0);
-    // for (var item in counts[levels[0]]){
-    //     hierarchy.push(item);
-    //     counts[levels[0]][item] = getCountsFromDataset(counts[levels[0]][item], 1);
-    //     for(var item2 in counts[levels[0]][item][levels[1]]){
-    //         hierarchy.push(item2);
-    //         counts[levels[0]][item][levels[1]][item2] = getCountsFromDataset(counts[levels[0]][item][levels[1]][item2], 2);
-    //         hierarchy.pop(item2);
-    //     }
-    //     hierarchy.pop(item);
-    // }
 
     var light = new THREE.SpotLight(0xffffff, 1);
     light.position.set(19000, 16000, 19000);
@@ -115,7 +105,6 @@ function init() {
     scene.add(light);
 
     var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
-    //var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
     var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.castShadow = true;
@@ -124,13 +113,13 @@ function init() {
     sphere['count'] = dataset.length;
     sphere['name'] = "Adults - all records";
     scene.add(sphere);
-    // objects.push(sphere);
 
     var depth = 3;
     var count = Object.keys(counts).length - 1;
     //var count = 5;
     var radiusArray = computeRadius(depth, count);
-    generateConeTree(radiusArray, depth, sphere.position, counts);
+    var text = "Adults";
+    generateConeTree(radiusArray, depth, sphere.position, counts, text);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
     // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00 } )
@@ -151,24 +140,30 @@ function animate() {
     renderer.render( scene, camera );
 }
 
-function generateConeTree(radiusArray, depth, parentPosition, json) {
+function generateConeTree(radiusArray, depth, parentPosition, json, text) {
     var baseAngle = 2 * Math.PI / (Object.keys(json).length - 1);
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
     for(var obj in json){
     //for(var i = 0; i < Object.keys(json).length; i++){
         if (obj !== 'count') {
+            var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
             var z = radius * Math.sin(angle) + parentPosition.z;
             angle += baseAngle;
-            var sphereGeometry = new THREE.SphereBufferGeometry(json[obj]['count'] / delimiter, 32, 32);
-            //var sphereGeometry = new THREE.SphereBufferGeometry(20, 32, 32);
+            var sphereRadius = json[obj]['count'] / delimiter;
+            if(sphereRadius < 50){
+                sphereRadius =  50;
+            }
+            var sphereGeometry = new THREE.SphereBufferGeometry(sphereRadius, 32, 32);
             var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
             var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
             var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphere.castShadow = true;
             sphere.receiveShadow = false;
             sphere.position.set(x, parentPosition.y - levelShift, z);
+            sphere['count'] = json[obj]['count'];
+            sphere['name'] = desc;
             scene.add(sphere);
             // objects.push(sphere);
             var lineGeometry = new THREE.Geometry();
@@ -177,7 +172,7 @@ function generateConeTree(radiusArray, depth, parentPosition, json) {
             var line = new THREE.Line(lineGeometry, lineMaterial);
             scene.add(line);
             if (depth > 1) {
-                generateConeTree(radiusArray, depth - 1, sphere.position, json[obj]);
+                generateConeTree(radiusArray, depth - 1, sphere.position, json[obj], desc);
             }
         }
     }
