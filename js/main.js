@@ -22,6 +22,22 @@ document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 document.addEventListener( 'touchstart', onDocumentTouchStart, false );
 document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 
+// The base position of the root node
+var basePosition = new THREE.Vector3(0, 200, 0);
+// The basic radius for the deepest level
+var baseRadius = 200;
+// Distance between 2 levels of the tree
+var levelShift = 2000;
+var delimiter = 150;
+var dataset;
+//deprecated
+var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
+    "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
+var hierarchy = [];
+
+$.when(csvAjax()).then(init);
+
+//functions
 function onDocumentTouchStart( event ) {
     event.preventDefault();
     event.clientX = event.touches[0].clientX;
@@ -54,42 +70,30 @@ function onDocumentMouseMove( event ) {
     event.preventDefault();
     mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
     mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    // Get the modal
+    var modal = document.getElementById('myModal');
+    var modalContent = document.getElementById('myModalContent');
+    // Get the <span> element that closes the modal
+    var span = document.getElementsByClassName("close")[0];
     raycaster.setFromCamera( mouse, camera );
     var intersects = raycaster.intersectObjects( scene.children );
     if ( intersects.length > 0 ) {
-        // Get the modal
-        var modal = document.getElementById('myModal');
-        // Get the <span> element that closes the modal
-        var span = document.getElementsByClassName("close")[0];
+        modalContent.innerHTML = intersects[0].object['name'];
         // When the user clicks on <span> (x), close the modal
         span.onclick = function() {
             modal.style.display = "none";
         };
         modal.style.display = "block";
         window.onclick = function(event) {
-            if (event.target == modal) {
+            if (event.target === modal) {
                 modal.style.display = "none";
             }
         }
     }
+    else{
+        modal.style.display = "none";
+    }
 }
-
-
-
-// The base position of the root node
-var basePosition = new THREE.Vector3(0, 200, 0);
-// The basic radius for the deepest level
-var baseRadius = 200;
-// Distance between 2 levels of the tree
-var levelShift = 2000;
-var delimiter = 150;
-var dataset;
-//deprecated
-var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
-    "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
-var hierarchy = [];
-
-$.when(csvAjax()).then(init);
 
 function init() {
     var counts = {};
@@ -117,6 +121,8 @@ function init() {
     sphere.castShadow = true;
     sphere.receiveShadow = false;
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
+    sphere['count'] = dataset.length;
+    sphere['name'] = "Adults - all records";
     scene.add(sphere);
     // objects.push(sphere);
 
