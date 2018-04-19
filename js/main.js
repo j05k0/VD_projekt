@@ -47,6 +47,7 @@ window.onclick = function(event) {
 document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 document.addEventListener( 'touchstart', onDocumentTouchStart, false );
 document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+window.addEventListener( 'resize', onWindowResize, false );
 
 // The base position of the root node
 var basePosition = new THREE.Vector3(0, 200, 0);
@@ -63,40 +64,6 @@ var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relatio
 var nodes = [];
 
 $.when(csvAjax()).then(init);
-
-//functions
-function onDocumentTouchStart( event ) {
-    //event.preventDefault();
-    event.clientX = event.touches[0].clientX;
-    event.clientY = event.touches[0].clientY;
-    onDocumentMouseDown( event );
-}
-
-function onDocumentMouseDown( event ) {
-    //event.preventDefault();
-    mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
-    mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
-    raycaster.setFromCamera( mouse, camera );
-    var intersects = raycaster.intersectObjects( scene.children );
-    if ( intersects.length > 0 ) {
-        intersects[0].object.material.color.setHex(0x0000ff);
-    }
-}
-
-function onDocumentMouseMove( event ) {
-    event.preventDefault();
-    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-    raycaster.setFromCamera( mouse, camera );
-    var intersects = raycaster.intersectObjects( scene.children );
-    if ( intersects.length > 0 ) {
-        modalContent.innerHTML = intersects[0].object['name'] + '<br/>' + intersects[0].object['count'];
-        modal.style.display = "block";
-    }
-    else{
-        modal.style.display = "none";
-    }
-}
 
 function init() {
     var counts = {};
@@ -118,7 +85,7 @@ function init() {
     scene.add(sphere);
     nodes.push(sphere);
 
-    var depth = 3;
+    var depth = 2;
     var count = Object.keys(counts).length - 1;
     var radiusArray = computeRadius(depth, count);
     var text = "Adults";
@@ -365,18 +332,50 @@ function createMenu() {
     })
 }
 
+//functions
+function onDocumentTouchStart( event ) {
+    //event.preventDefault();
+    event.clientX = event.touches[0].clientX;
+    event.clientY = event.touches[0].clientY;
+    onDocumentMouseDown( event );
+}
 
+function onDocumentMouseDown( event ) {
+    //event.preventDefault();
+    mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+    raycaster.setFromCamera( mouse, camera );
+    var intersects = raycaster.intersectObjects( scene.children );
+    if ( intersects.length > 0 ) {
+        intersects[0].object.material.color.setHex(0x0000ff);
+    }
+}
 
+function onDocumentMouseMove( event ) {
+    event.preventDefault();
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    raycaster.setFromCamera( mouse, camera );
+    var intersects = raycaster.intersectObjects( scene.children );
+    if ( intersects.length > 0 ) {
+        modalContent.innerHTML = intersects[0].object['name'] + '<br/>' + intersects[0].object['count'];
+        modal.style.display = "block";
+    }
+    else{
+        modal.style.display = "none";
+    }
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
+function onWindowResize() {
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    // cameraOrtho.left = - width / 2;
+    // cameraOrtho.right = width / 2;
+    // cameraOrtho.top = height / 2;
+    // cameraOrtho.bottom = - height / 2;
+    // cameraOrtho.updateProjectionMatrix();
+    // updateHUDSprites();
+    renderer.setSize( window.innerWidth, window.innerHeight );
+}
