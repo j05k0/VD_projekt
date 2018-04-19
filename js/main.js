@@ -25,6 +25,15 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+var light1 = new THREE.SpotLight(0xffffff, 1);
+light1.position.set(19000, 16000, 19000);
+light1.castShadow = true;
+scene.add(light1);
+var light2 = new THREE.SpotLight(0xffffff, 1);
+light2.position.set(-19000, 16000, -19000);
+light2.castShadow = true;
+scene.add(light2);
+
 //Controls for moving of camera
 var controls = new THREE.OrbitControls( camera, renderer.domElement );
 controls.panningMode = THREE.HorizontalPanning;
@@ -74,21 +83,70 @@ var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relatio
     "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
 var nodes = [];
 
-createMenu();
-$.when(csvAjax()).then(init);
+$.when(csvAjax()).then(createMenu);
+
+function createMenu() {
+    var order = {
+        '1. layer' : 'Workclass',
+        '2. layer' : 'Education',
+        '3. layer' : 'Marital_status',
+        '4. layer' : 'Occupation',
+        '5. layer' : 'Relationship',
+        '6. layer' : 'Race',
+        '7. layer' : 'Sex',
+        '8. layer' : 'Hours_per_week',
+        '9. layer' : 'Native_country',
+        '10. layer' : 'Age',
+        'Render view': function () {
+            if(isCorrectLevels(this)) {
+                levels = [];
+                nodes = [];
+                for (var i = 0; i < 10; i++) {
+                    levels.push(this[(i + 1) + ". layer"]);
+                }
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0xcccccc);
+                scene.add(light1);
+                scene.add(light2);
+                init();
+            }
+            else{
+                alert('One or more categories are chosen more than once!');
+            }
+        }
+    };
+
+    var filter = {
+        'Max count': 0
+    };
+
+    var gui = new dat.gui.GUI();
+    var orderFolder = gui.addFolder("Category Order");
+
+    var layers =[];
+    for (var i = 0; i < levels.length; i++){
+        layers[i] = orderFolder.add(order, (i + 1) + '. layer', ["Workclass", "Education", "Marital_status", "Occupation", "Relationship", "Race", "Sex", "Hours_per_week", "Native_country", "Age"]);
+    }
+    layers[i] = orderFolder.add(order, 'Render view');
+
+    var filterFolder = gui.addFolder("Filter");
+    var controlCount = filterFolder.add(filter, "Max count").name('Max count').min(0).max(dataset.length).step(1);
+    controlCount.onChange(function () {
+        for (var i = 0; i < nodes.length; i++){
+            nodes[i].material.color.setHex(0xff0000);
+        }
+        for (i = 0; i < nodes.length; i++){
+            if(nodes[i]['count'] > filter["Max count"]){
+                nodes[i].material.color.setHex(0x0000ff);
+            }
+        }
+    });
+    init();
+}
 
 function init() {
     var counts = {};
     counts = getCountsFromDataset(counts, 0);
-
-    var light = new THREE.SpotLight(0xffffff, 1);
-    light.position.set(19000, 16000, 19000);
-    light.castShadow = true;
-    scene.add(light);
-    light = new THREE.SpotLight(0xffffff, 1);
-    light.position.set(-19000, 16000, -19000);
-    light.castShadow = true;
-    scene.add(light);
 
     var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
@@ -147,14 +205,14 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
             var z = radius * Math.sin(angle) + parentPosition.z;
-            var spriteRadius = radius + 50;
-            var spriteX = spriteRadius * Math.cos(angle) + parentPosition.x;
-            var spriteZ = spriteRadius * Math.sin(angle) + parentPosition.z;
-            angle += baseAngle;
             var sphereRadius = json[obj]['count'] / delimiter;
             if(sphereRadius < 50){
                 sphereRadius =  50;
             }
+            var spriteRadius = radius + sphereRadius;
+            var spriteX = spriteRadius * Math.cos(angle) + parentPosition.x;
+            var spriteZ = spriteRadius * Math.sin(angle) + parentPosition.z;
+            angle += baseAngle;
             var sphereGeometry = new THREE.SphereBufferGeometry(sphereRadius, 32, 32);
             var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
             var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
@@ -304,57 +362,6 @@ function getCountsFromDataset(json) {
     return json;
 }
 
-function createMenu() {
-    var order = {
-        '1. layer' : 'Workclass',
-        '2. layer' : 'Education',
-        '3. layer' : 'Marital_status',
-        '4. layer' : 'Occupation',
-        '5. layer' : 'Relationship',
-        '6. layer' : 'Race',
-        '7. layer' : 'Sex',
-        '8. layer' : 'Hours_per_week',
-        '9. layer' : 'Native_country',
-        '10. layer' : 'Age',
-        'Render view': function () {
-            levels = [];
-            nodes = [];
-            for(var i = 0; i < 10; i++){
-                levels.push(this[(i + 1 ) + ". layer"]);
-            }
-            scene =  new THREE.Scene();
-            scene.background = new THREE.Color(0xcccccc);
-            init();
-        }
-    };
-
-    var filter = {
-        'Max count': 0
-    };
-
-    var gui = new dat.gui.GUI();
-    var orderFolder = gui.addFolder("Category Order");
-
-    var layers =[];
-    for (var i = 0; i < levels.length; i++){
-        layers[i] = orderFolder.add(order, (i + 1) + '. layer', ["Workclass", "Education", "Marital_status", "Occupation", "Relationship", "Race", "Sex", "Hours_per_week", "Native_country", "Age"]);
-    }
-    layers[i] = orderFolder.add(order, 'Render view');
-
-    var filterFolder = gui.addFolder("Filter");
-    var controlCount = filterFolder.add(filter, "Max count").name('Max count');
-    controlCount.onChange(function () {
-        for (var i = 0; i < nodes.length; i++){
-            nodes[i].material.color.setHex(0xff0000);
-        }
-        for (i = 0; i < nodes.length; i++){
-            if(nodes[i]['count'] > filter["Max count"]){
-                nodes[i].material.color.setHex(0x0000ff);
-            }
-        }
-    })
-}
-
 function makeTextSprite( message, parameters )
 {
     if ( parameters === undefined ) parameters = {};
@@ -429,6 +436,19 @@ function roundRect(ctx, x, y, w, h, r)
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
+}
+
+function isCorrectLevels(obj) {
+    var result = true;
+    for(var i = 0; i < 10; i++){
+        for(var j = 1; j < 10; j++){
+            if(i !== j && obj[[(i + 1) + ". layer"]] === obj[[(j + 1) + ". layer"]]){
+                result = false;
+                break;
+            }
+        }
+    }
+    return result;
 }
 
 //Listener functions
