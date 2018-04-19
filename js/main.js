@@ -1,3 +1,14 @@
+THREE.SpriteAlignment = {};
+THREE.SpriteAlignment.topLeft = new THREE.Vector2( 1, -1 );
+THREE.SpriteAlignment.topCenter = new THREE.Vector2( 0, -1 );
+THREE.SpriteAlignment.topRight = new THREE.Vector2( -1, -1 );
+THREE.SpriteAlignment.centerLeft = new THREE.Vector2( 1, 0 );
+THREE.SpriteAlignment.center = new THREE.Vector2( 0, 0 );
+THREE.SpriteAlignment.centerRight = new THREE.Vector2( -1, 0 );
+THREE.SpriteAlignment.bottomLeft = new THREE.Vector2( 1, 1 );
+THREE.SpriteAlignment.bottomCenter = new THREE.Vector2( 0, 1 );
+THREE.SpriteAlignment.bottomRight = new THREE.Vector2( -1, 1 );
+
 // Init of the scene
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
@@ -44,9 +55,9 @@ window.onclick = function(event) {
 };
 
 //Initialization of listeners
-document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-document.addEventListener( 'touchstart', onDocumentTouchStart, false );
-document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+// document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+// document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+// document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 window.addEventListener( 'resize', onWindowResize, false );
 
 // The base position of the root node
@@ -63,6 +74,7 @@ var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relatio
     "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
 var nodes = [];
 
+createMenu();
 $.when(csvAjax()).then(init);
 
 function init() {
@@ -71,6 +83,10 @@ function init() {
 
     var light = new THREE.SpotLight(0xffffff, 1);
     light.position.set(19000, 16000, 19000);
+    light.castShadow = true;
+    scene.add(light);
+    light = new THREE.SpotLight(0xffffff, 1);
+    light.position.set(-19000, 16000, -19000);
     light.castShadow = true;
     scene.add(light);
 
@@ -84,6 +100,9 @@ function init() {
     sphere['name'] = "Adults - all records";
     scene.add(sphere);
     nodes.push(sphere);
+    var spritey = makeTextSprite(" " + sphere['name'] + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
+    spritey.position.set(basePosition.x + 50, basePosition.y + sphere.geometry.parameters.radius, basePosition.z);
+    scene.add( spritey );
 
     var depth = 2;
     var count = Object.keys(counts).length - 1;
@@ -99,8 +118,6 @@ function init() {
 
     // var helper = new THREE.CameraHelper( light.shadow.camera );
     // scene.add( helper );
-
-    createMenu();
 
     animate();
 }
@@ -130,6 +147,9 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
             var z = radius * Math.sin(angle) + parentPosition.z;
+            var spriteRadius = radius + 50;
+            var spriteX = spriteRadius * Math.cos(angle) + parentPosition.x;
+            var spriteZ = spriteRadius * Math.sin(angle) + parentPosition.z;
             angle += baseAngle;
             var sphereRadius = json[obj]['count'] / delimiter;
             if(sphereRadius < 50){
@@ -146,6 +166,9 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             sphere['name'] = desc;
             scene.add(sphere);
             nodes.push(sphere);
+            var spritey = makeTextSprite(" " + obj + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
+            spritey.position.set(spriteX, sphere.position.y, spriteZ);
+            scene.add( spritey );
             var lineGeometry = new THREE.Geometry();
             lineGeometry.vertices.push(parentPosition);
             lineGeometry.vertices.push(sphere.position);
@@ -332,7 +355,83 @@ function createMenu() {
     })
 }
 
-//functions
+function makeTextSprite( message, parameters )
+{
+    if ( parameters === undefined ) parameters = {};
+
+    var fontface = parameters.hasOwnProperty("fontface") ?
+        parameters["fontface"] : "Arial";
+
+    var fontsize = parameters.hasOwnProperty("fontsize") ?
+        parameters["fontsize"] : 18;
+
+    var borderThickness = parameters.hasOwnProperty("borderThickness") ?
+        parameters["borderThickness"] : 4;
+
+    var borderColor = parameters.hasOwnProperty("borderColor") ?
+        parameters["borderColor"] : { r:0, g:0, b:0, a:1.0 };
+
+    var backgroundColor = parameters.hasOwnProperty("backgroundColor") ?
+        parameters["backgroundColor"] : { r:255, g:255, b:255, a:1.0 };
+
+    //var spriteAlignment = parameters.hasOwnProperty("alignment") ?
+    //	parameters["alignment"] : THREE.SpriteAlignment.topLeft;
+
+
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
+    context.font = "Bold " + fontsize + "px " + fontface;
+
+    // get size data (height depends only on font size)
+    var metrics = context.measureText( message );
+    var textWidth = metrics.width;
+
+    // background color
+    context.fillStyle   = "rgba(" + backgroundColor.r + "," + backgroundColor.g + ","
+        + backgroundColor.b + "," + backgroundColor.a + ")";
+    // border color
+    context.strokeStyle = "rgba(" + borderColor.r + "," + borderColor.g + ","
+        + borderColor.b + "," + borderColor.a + ")";
+
+    context.lineWidth = borderThickness;
+    roundRect(context, borderThickness/2, borderThickness/2, textWidth + borderThickness, fontsize * 1.4 + borderThickness, 6);
+    // 1.4 is extra height factor for text below baseline: g,j,p,q.
+
+    // text color
+    context.fillStyle = "rgba(0, 0, 0, 1.0)";
+
+    context.fillText( message, borderThickness, fontsize + borderThickness);
+
+    // canvas contents will be used for a texture
+    var texture = new THREE.Texture(canvas);
+    texture.needsUpdate = true;
+
+    var spriteMaterial = new THREE.SpriteMaterial(
+        { map: texture, useScreenCoordinates: false } );
+    var sprite = new THREE.Sprite( spriteMaterial );
+    sprite.scale.set(500, 500, 1);
+    return sprite;
+}
+
+// function for drawing rounded rectangles
+function roundRect(ctx, x, y, w, h, r)
+{
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+}
+
+//Listener functions
 function onDocumentTouchStart( event ) {
     //event.preventDefault();
     event.clientX = event.touches[0].clientX;
