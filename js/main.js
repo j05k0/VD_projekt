@@ -38,7 +38,7 @@ scene.add(light2);
 var controls = new THREE.OrbitControls( camera, renderer.domElement );
 controls.panningMode = THREE.HorizontalPanning;
 
-var render = true;
+var projector = new THREE.Projector();
 
 //Raycaster for clickable objects
 var raycaster = new THREE.Raycaster();
@@ -64,8 +64,7 @@ window.onclick = function(event) {
 };
 
 //Initialization of listeners
-// document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-// document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 // document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 window.addEventListener( 'resize', onWindowResize, false );
 
@@ -82,8 +81,33 @@ var dataset;
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
     "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
 var nodes = [];
+var depth = 2;
+var duration = 750;
 
 $.when(csvAjax()).then(createMenu);
+
+function csvAjax() {
+    return $.ajax({
+        url: 'data/Adult.csv',
+        dataType: 'text'
+    }).done(successCallback);
+}
+
+function successCallback(data) {
+    var lines = data.split("\n");
+    var result = [];
+    var headers = lines[0].split(",");
+    for(var i = 1; i < lines.length; i++){
+        var obj = {};
+        var currentLine=lines[i].split(",");
+        for(var j = 0; j < headers.length; j++){
+            obj[headers[j]] = currentLine[j];
+        }
+        result.push(obj);
+    }
+    //return result; //JavaScript object
+    dataset = result; //JSON
+}
 
 function createMenu() {
     var order = {
@@ -156,17 +180,19 @@ function init() {
     sphere.position.set(basePosition.x, basePosition.y, basePosition.z);
     sphere['count'] = dataset.length;
     sphere['name'] = "Adults - all records";
+    sphere['data'] = counts;
+    sphere['expanded'] = depth > 1;
     scene.add(sphere);
     nodes.push(sphere);
+    console.log(sphere);
     var spritey = makeTextSprite(" " + sphere['name'] + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
     spritey.position.set(basePosition.x + 50, basePosition.y + sphere.geometry.parameters.radius, basePosition.z);
     scene.add( spritey );
 
-    var depth = 2;
     var count = Object.keys(counts).length - 1;
     var radiusArray = computeRadius(depth, count);
     var text = "Adults";
-    generateConeTree(radiusArray, depth, sphere.position, counts, text);
+    sphere['children'] = generateConeTree(radiusArray, depth, sphere.position, counts, text);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
     // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00 } )
@@ -182,25 +208,20 @@ function init() {
 
 function animate() {
     requestAnimationFrame( animate );
-    // if(render) {
-    //     for (var obj in scene.children) {
-    //         var object = scene.getObjectById(parseInt(obj));
-    //         if(object.name != ''){
-    //             console.log(object);
-    //         }
-    //
-    //     }
-    //     render = false;
-    // }
     renderer.render( scene, camera );
 }
 
+//**********************
+//** CUSTOM FUNCTIONS **
+//**********************
+
+// Generating cone tree
 function generateConeTree(radiusArray, depth, parentPosition, json, text) {
     var baseAngle = 2 * Math.PI / (Object.keys(json).length - 1);
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
+    var objects = [];
     for(var obj in json){
-    //for(var i = 0; i < Object.keys(json).length; i++){
         if (obj !== 'count') {
             var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
@@ -222,8 +243,11 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             sphere.position.set(x, parentPosition.y - levelShift, z);
             sphere['count'] = json[obj]['count'];
             sphere['name'] = desc;
+            sphere['data'] = json[obj];
+            sphere['expanded'] = depth > 1;
             scene.add(sphere);
             nodes.push(sphere);
+            objects.push(sphere);
             var spritey = makeTextSprite(" " + obj + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
             spritey.position.set(spriteX, sphere.position.y, spriteZ);
             scene.add( spritey );
@@ -233,10 +257,11 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             var line = new THREE.Line(lineGeometry, lineMaterial);
             scene.add(line);
             if (depth > 1) {
-                generateConeTree(radiusArray, depth - 1, sphere.position, json[obj], desc);
+                sphere['children'] = generateConeTree(radiusArray, depth - 1, sphere.position, json[obj], desc);
             }
         }
     }
+    return objects;
 }
 
 function computeRadius(depth, count){
@@ -250,29 +275,6 @@ function computeRadius(depth, count){
         radius = x;
     }
     return radiusArray;
-}
-
-function csvAjax() {
-    return $.ajax({
-        url: 'data/Adult.csv',
-        dataType: 'text'
-    }).done(successCallback);
-}
-
-function successCallback(data) {
-    var lines = data.split("\n");
-    var result = [];
-    var headers = lines[0].split(",");
-    for(var i = 1; i < lines.length; i++){
-        var obj = {};
-        var currentLine=lines[i].split(",");
-        for(var j = 0; j < headers.length; j++){
-            obj[headers[j]] = currentLine[j];
-        }
-        result.push(obj);
-    }
-    //return result; //JavaScript object
-    dataset = result; //JSON
 }
 
 function getCountsFromDataset(json) {
@@ -362,8 +364,7 @@ function getCountsFromDataset(json) {
     return json;
 }
 
-function makeTextSprite( message, parameters )
-{
+function makeTextSprite( message, parameters ) {
     if ( parameters === undefined ) parameters = {};
 
     var fontface = parameters.hasOwnProperty("fontface") ?
@@ -421,8 +422,7 @@ function makeTextSprite( message, parameters )
 }
 
 // function for drawing rounded rectangles
-function roundRect(ctx, x, y, w, h, r)
-{
+function roundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x+r, y);
     ctx.lineTo(x+w-r, y);
@@ -452,21 +452,45 @@ function isCorrectLevels(obj) {
 }
 
 //Listener functions
-function onDocumentTouchStart( event ) {
-    //event.preventDefault();
-    event.clientX = event.touches[0].clientX;
-    event.clientY = event.touches[0].clientY;
-    onDocumentMouseDown( event );
-}
-
 function onDocumentMouseDown( event ) {
     //event.preventDefault();
     mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
     mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
-    raycaster.setFromCamera( mouse, camera );
-    var intersects = raycaster.intersectObjects( scene.children );
+
+    var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
+    projector.unprojectVector( vector, camera );
+    raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
+
+    var intersects = raycaster.intersectObjects( nodes );
     if ( intersects.length > 0 ) {
-        intersects[0].object.material.color.setHex(0x0000ff);
+        if(intersects[0].object['data'] !== undefined) {
+            console.log(intersects[0].object['expanded']);
+            if (intersects[0].object['expanded'] !== undefined) {
+                if (intersects[0].object['expanded'] !== true) {
+                    console.log(intersects[0].object['name']);
+                    console.log(intersects[0].object['data']);
+                    depth = 1;
+                    var json = intersects[0].object['data'];
+                    var count = Object.keys(json).length - 1;
+                    var radiusArray = computeRadius(depth, count);
+                    console.log(radiusArray);
+                    var text = "Adults";
+                    intersects[0].object['expanded'] = true;
+                    intersects[0].object['children'] = generateConeTree(radiusArray, depth, intersects[0].object.position, json, text);
+                }
+                else{
+                    var count = intersects[0].object['children'].length;
+                    for(var i = 0; i < count; i++){
+                        var selected = scene.getObjectByName(intersects[0].object['children'][0]['name']);
+                        console.log(selected);
+                        removeByAttr(nodes, 'name', selected.name);
+                        removeByAttr(intersects[0].object['children'], 'name', selected.name);
+                        scene.remove(selected);
+                        //TODO este odstranit ciary a spritey
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -498,3 +522,17 @@ function onWindowResize() {
     // updateHUDSprites();
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
+
+var removeByAttr = function(arr, attr, value){
+    var i = arr.length;
+    while(i--){
+        if( arr[i]
+            && arr[i].hasOwnProperty(attr)
+            && (arguments.length > 2 && arr[i][attr] === value ) ){
+
+            arr.splice(i,1);
+
+        }
+    }
+    return arr;
+};
