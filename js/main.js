@@ -80,7 +80,7 @@ var delimiter = 150;
 var dataset;
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
     "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
-var nodes = [];
+var nodes = [], lines = [], sprites = [];
 var depth = 2;
 var duration = 750;
 
@@ -220,7 +220,7 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
     var baseAngle = 2 * Math.PI / (Object.keys(json).length - 1);
     var angle = baseAngle;
     var radius = radiusArray[depth - 1];
-    var objects = [];
+    var children = [];   // This is the array of the children for the node on upper level
     for(var obj in json){
         if (obj !== 'count') {
             var desc = text + " - " + obj;
@@ -247,23 +247,31 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             sphere['expanded'] = depth > 1;
             scene.add(sphere);
             nodes.push(sphere);
-            objects.push(sphere);
+            children.push(sphere);
+
             var spritey = makeTextSprite(" " + obj + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
             spritey.position.set(spriteX, sphere.position.y, spriteZ);
+            spritey['name'] = "sprite " + desc;
             scene.add( spritey );
+            sprites.push(spritey);
+
             var lineGeometry = new THREE.Geometry();
             lineGeometry.vertices.push(parentPosition);
             lineGeometry.vertices.push(sphere.position);
             var line = new THREE.Line(lineGeometry, lineMaterial);
+            line['name'] = "line " + desc;
             scene.add(line);
+            lines.push(line);
+
             if (depth > 1) {
                 sphere['children'] = generateConeTree(radiusArray, depth - 1, sphere.position, json[obj], desc);
             }
         }
     }
-    return objects;
+    return children;
 }
 
+// Compute the radius for different levels of depth
 function computeRadius(depth, count){
     var radiusArray = [];
     var baseAngle = 2 * Math.PI / count / 2;
@@ -486,8 +494,19 @@ function onDocumentMouseDown( event ) {
                         removeByAttr(nodes, 'name', selected.name);
                         removeByAttr(intersects[0].object['children'], 'name', selected.name);
                         scene.remove(selected);
-                        //TODO este odstranit ciary a spritey
+
+                        var selectedLine = scene.getObjectByName("line " + selected.name);
+                        removeByAttr(lines, 'name', selectedLine.name);
+                        scene.remove(selectedLine);
+
+                        var selectedSprite = scene.getObjectByName("sprite " + selected.name);
+                        removeByAttr(sprites, 'name', selectedSprite.name);
+                        scene.remove(selectedSprite);
                     }
+                    intersects[0].object['expanded'] = false;
+                    intersects[0].object['children'] = [];
+
+                    //TODO blbne ked odstranim jeden podstrom, potom iny a vtedy to zle odstrani ciary, sprity a uzly
                 }
             }
         }
