@@ -475,38 +475,21 @@ function onDocumentMouseDown( event ) {
             console.log(intersects[0].object['expanded']);
             if (intersects[0].object['expanded'] !== undefined) {
                 if (intersects[0].object['expanded'] !== true) {
-                    console.log(intersects[0].object['name']);
-                    console.log(intersects[0].object['data']);
+                    console.log("Expanding sub-tree");
+                    // console.log(intersects[0].object['name']);
+                    // console.log(intersects[0].object['data']);
                     depth = 1;
                     var json = intersects[0].object['data'];
                     var count = Object.keys(json).length - 1;
                     var radiusArray = computeRadius(depth, count);
-                    console.log(radiusArray);
-                    var text = "Adults";
+                    // console.log(radiusArray);
                     intersects[0].object['expanded'] = true;
-                    intersects[0].object['children'] = generateConeTree(radiusArray, depth, intersects[0].object.position, json, text);
+                    intersects[0].object['children'] =
+                        generateConeTree(radiusArray, depth, intersects[0].object.position, json, intersects[0].object['name']);
                 }
                 else{
-                    var count = intersects[0].object['children'].length;
-                    for(var i = 0; i < count; i++){
-                        var selected = scene.getObjectByName(intersects[0].object['children'][0]['name']);
-                        console.log(selected);
-                        removeByAttr(nodes, 'name', selected.name);
-                        removeByAttr(intersects[0].object['children'], 'name', selected.name);
-                        scene.remove(selected);
-
-                        var selectedLine = scene.getObjectByName("line " + selected.name);
-                        removeByAttr(lines, 'name', selectedLine.name);
-                        scene.remove(selectedLine);
-
-                        var selectedSprite = scene.getObjectByName("sprite " + selected.name);
-                        removeByAttr(sprites, 'name', selectedSprite.name);
-                        scene.remove(selectedSprite);
-                    }
-                    intersects[0].object['expanded'] = false;
-                    intersects[0].object['children'] = [];
-
-                    //TODO blbne ked odstranim jeden podstrom, potom iny a vtedy to zle odstrani ciary, sprity a uzly
+                    console.log("Collapsing sub-tree");
+                    collapse(intersects[0].object);
                 }
             }
         }
@@ -555,3 +538,27 @@ var removeByAttr = function(arr, attr, value){
     }
     return arr;
 };
+
+function collapse(node) {
+    var count = node['children'].length;
+    for(var i = 0; i < count; i++){
+        if(node['children'][0]['expanded']){
+            collapse(node['children'][0]);
+        }
+        var selected = scene.getObjectByName(node['children'][0]['name']);
+        // console.log(selected);
+        removeByAttr(nodes, 'name', selected.name);
+        removeByAttr(node['children'], 'name', selected.name);
+        scene.remove(selected);
+
+        var selectedLine = scene.getObjectByName("line " + selected.name);
+        removeByAttr(lines, 'name', selectedLine.name);
+        scene.remove(selectedLine);
+
+        var selectedSprite = scene.getObjectByName("sprite " + selected.name);
+        removeByAttr(sprites, 'name', selectedSprite.name);
+        scene.remove(selectedSprite);
+    }
+    node['expanded'] = false;
+    node['children'] = [];
+}
