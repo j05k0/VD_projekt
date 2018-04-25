@@ -93,7 +93,7 @@ $.when(csvAjax()).then(createMenu);
 
 function csvAjax() {
     return $.ajax({
-        url: 'data/Adult.csv',
+        url: 'data/Adult_new.csv',
         dataType: 'text'
     }).done(successCallback);
 }
@@ -310,14 +310,7 @@ function getCountsFromDataset(json) {
     var id = 0;
     for(var i = 0; i < dataset.length; i++){
         id = 0;
-        if(levels[id] === 'Age'){
-            json = processAge(json, i, id);
-        }
-        else{
-            json[dataset[i][levels[id]]] = processData(json[dataset[i][levels[id]]]);
-        }
-
-        //TODO problem with Age: how todetermine on which level is Age and ensure that there is the right property and not undefined
+        json[dataset[i][levels[id]]] = processData(json[dataset[i][levels[id]]]);
 
         var tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id]]];
         tmp = processData(tmp);
@@ -366,20 +359,13 @@ function getCountsFromDataset(json) {
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]] = tmp;
 
-        if(levels[id] === 'Age'){
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
             id = 0;
-            processAge(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]],
-                i, id);
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = 0;
         }
-        else{
-            id = 0;
-            if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-                id = 0;
-                json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = 0;
-            }
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]++;
-        }
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]++;
     }
     console.log(json);
     // console.log(JSON.stringify(json));
@@ -394,7 +380,7 @@ function processData(json) {
     return json;
 }
 
-function processAge(json, recordID, levelID) {
+/* function processAge(json, recordID, levelID) {
     if(dataset[recordID][levels[levelID]] >= minAge1 && dataset[recordID][levels[levelID]] <= maxAge1){
         if(json[age1] == null){
             json[age1] = 0;
@@ -420,7 +406,7 @@ function processAge(json, recordID, levelID) {
         json[age4]++;
     }
     return json;
-}
+} */
 
 function makeTextSprite( message, parameters ) {
     if ( parameters === undefined ) parameters = {};
