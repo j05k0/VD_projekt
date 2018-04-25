@@ -80,7 +80,7 @@ var delimiter = 150;
 var dataset;
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
     "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
-var age1 = '<17,25>', age2 = '<26,40', age3 = '<41, 65>', age4 = '<66, 90>';
+var age1 = '<17,25>', age2 = '<26,40>', age3 = '<41, 65>', age4 = '<66, 90>';
 var minAge1 = 17, maxAge1 = 25;
 var minAge2 = 26, maxAge2 = 40;
 var minAge3 = 41, maxAge3 = 65;
@@ -176,7 +176,6 @@ function createMenu() {
 function init() {
     var counts = {};
     counts = getCountsFromDataset(counts, 0);
-    computeAge(counts);
 
     var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
@@ -311,112 +310,66 @@ function getCountsFromDataset(json) {
     var id = 0;
     for(var i = 0; i < dataset.length; i++){
         id = 0;
-        if(json[dataset[i][levels[id]]] == null){
-            json[dataset[i][levels[id]]] = {'count': 0};
-        }
-        json[dataset[i][levels[id]]]['count']++;
-
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
-
-        id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
-
-        id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
-
-        id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
-
-        id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
-
-        id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
-
-        id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]['count']++;
-
-        id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
-            id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = {'count': 0};
-        }
-        id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]]['count']++;
-
-        //TODO make a function with this mess
         if(levels[id] === 'Age'){
-            if(dataset[i][levels[id]] >= minAge1 && dataset[i][levels[id]] <= maxAge1){
-                id = 0;
-                if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age1] == null){
-                    id = 0;
-                    json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age1] = 0;
-                }
-                id = 0;
-                json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age1]++;
-            }
-            else if(dataset[i][levels[id]] >= minAge2 && dataset[i][levels[id]] <= maxAge2){
-                id = 0;
-                if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age2] == null){
-                    id = 0;
-                    json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age2] = 0;
-                }
-                id = 0;
-                json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age2]++;
-            }
-            else if(dataset[i][levels[id]] >= minAge3 && dataset[i][levels[id]] <= maxAge3){
-                id = 0;
-                if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age3] == null){
-                    id = 0;
-                    json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age3] = 0;
-                }
-                id = 0;
-                json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age3]++;
-            }
-            else if(dataset[i][levels[id]] >= minAge4 && dataset[i][levels[id]] <= maxAge4){
-                id = 0;
-                if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age4] == null){
-                    id = 0;
-                    json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age4] = 0;
-                }
-                id = 0;
-                json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][age4]++;
-            }
+            json = processAge(json, i, id);
+        }
+        else{
+            json[dataset[i][levels[id]]] = processData(json[dataset[i][levels[id]]]);
+        }
+
+        //TODO problem with Age: how todetermine on which level is Age and ensure that there is the right property and not undefined
+
+        var tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]] = tmp;
+
+        if(levels[id] === 'Age'){
+            id = 0;
+            processAge(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]],
+                i, id);
         }
         else{
             id = 0;
@@ -433,12 +386,40 @@ function getCountsFromDataset(json) {
     return json;
 }
 
-function computeAge(json) {
-    var idx = 0;
-    while(levels[idx] !== 'Age'){
-        idx++;
+function processData(json) {
+    if(json == null){
+        json = {'count': 0};
     }
+    json['count']++;
+    return json;
+}
 
+function processAge(json, recordID, levelID) {
+    if(dataset[recordID][levels[levelID]] >= minAge1 && dataset[recordID][levels[levelID]] <= maxAge1){
+        if(json[age1] == null){
+            json[age1] = 0;
+        }
+        json[age1]++;
+    }
+    else if(dataset[recordID][levels[levelID]] >= minAge2 && dataset[recordID][levels[levelID]] <= maxAge2){
+        if(json[age2] == null){
+            json[age2] = 0;
+        }
+        json[age2]++;
+    }
+    else if(dataset[recordID][levels[levelID]] >= minAge3 && dataset[recordID][levels[levelID]] <= maxAge3){
+        if(json[age3] == null){
+            json[age3] = 0;
+        }
+        json[age3]++;
+    }
+    else if(dataset[recordID][levels[levelID]] >= minAge4 && dataset[recordID][levels[levelID]] <= maxAge4){
+        if(json[age4] == null){
+            json[age4] = 0;
+        }
+        json[age4]++;
+    }
+    return json;
 }
 
 function makeTextSprite( message, parameters ) {
