@@ -12,5 +12,7 @@
     <orderEntry type="library" name="@types/jquery" level="application" />
     <orderEntry type="library" name="jquery-3.3.1" level="application" />
     <orderEntry type="library" name="dat.gui" level="application" />
+    <orderEntry type="library" name="@types/mathjs" level="application" />
+    <orderEntry type="library" name="math" level="application" />
   </component>
 </module>

@@ -26,11 +26,11 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 var light1 = new THREE.SpotLight(0xffffff, 1);
-light1.position.set(19000, 16000, 19000);
+light1.position.set(190000, 160000, 190000);
 light1.castShadow = true;
 scene.add(light1);
 var light2 = new THREE.SpotLight(0xffffff, 1);
-light2.position.set(-19000, 16000, -19000);
+light2.position.set(-190000, 160000, -190000);
 light2.castShadow = true;
 scene.add(light2);
 
@@ -65,7 +65,7 @@ window.onclick = function(event) {
 
 //Initialization of listeners
 document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-// document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+document.addEventListener("contextmenu", function(e) { e.preventDefault(); });
 window.addEventListener( 'resize', onWindowResize, false );
 
 // The base position of the root node
@@ -86,7 +86,7 @@ var minAge2 = 26, maxAge2 = 40;
 var minAge3 = 41, maxAge3 = 65;
 var minAge4 = 66, maxAge4 = 90;
 var nodes = [], lines = [], sprites = [];
-var depth = 2;
+var depth = 4;
 var duration = 750;
 
 $.when(csvAjax()).then(createMenu);
@@ -137,6 +137,7 @@ function createMenu() {
                 scene.background = new THREE.Color(0xcccccc);
                 scene.add(light1);
                 scene.add(light2);
+                delimiter = 150;
                 init();
             }
             else{
@@ -194,11 +195,11 @@ function init() {
     spritey.position.set(basePosition.x + 50, basePosition.y + sphere.geometry.parameters.radius, basePosition.z);
     scene.add( spritey );
 
-    var count = Object.keys(counts).length - 1;
-    var radiusArray = computeRadius(depth, count, counts);
-    console.log(radiusArray);
     var text = "Adults";
-    sphere['children'] = generateConeTree(radiusArray, depth, sphere.position, counts, text);
+    delimiter = 50;
+    computeRadius(depth, counts, text);
+    // sphere['childrenRadius'] = radiusArray[depth - 1];
+    sphere['children'] = generateConeTree(depth, sphere.position, counts, text);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
     // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00 } )
@@ -222,13 +223,13 @@ function animate() {
 //**********************
 
 // Generating cone tree
-function generateConeTree(radiusArray, depth, parentPosition, json, text) {
-    var baseAngle = 2 * Math.PI / (Object.keys(json).length - 1);
+function generateConeTree(depth, parentPosition, json, text) {
+    var baseAngle = 2 * Math.PI / (Object.keys(json).length - 2);
     var angle = baseAngle;
-    var radius = radiusArray[depth - 1];
+    var radius = json['childrenRadius'];
     var children = [];   // This is the array of the children for the node on upper level
     for(var obj in json){
-        if (obj !== 'count') {
+        if (obj !== 'count' && obj !== 'childrenRadius') {
             var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
             var z = radius * Math.sin(angle) + parentPosition.z;
@@ -251,6 +252,7 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             sphere['name'] = desc;
             sphere['data'] = json[obj];
             sphere['expanded'] = depth > 1;
+            // sphere['childrenRadius'] = radiusArray[depth - 2];
             scene.add(sphere);
             nodes.push(sphere);
             children.push(sphere);
@@ -270,7 +272,7 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
             lines.push(line);
 
             if (depth > 1) {
-                sphere['children'] = generateConeTree(radiusArray, depth - 1, sphere.position, json[obj], desc);
+                sphere['children'] = generateConeTree(depth - 1, sphere.position, json[obj], desc);
             }
         }
     }
@@ -278,30 +280,48 @@ function generateConeTree(radiusArray, depth, parentPosition, json, text) {
 }
 
 // Compute the radius for different levels of depth
-function computeRadius(depth, count, json){
-    var radiusArray = [];
-    var baseAngle = 2 * Math.PI / count / 2;
-    // var radius = getBaseRadius(json, count);
-    var radius = baseRadius;
-    radiusArray[0] = radius;
-    for(var i = 1; i < depth; i++){
-        var x = (radius * 2 + radius) / 2 / Math.sin(baseAngle);
-        radiusArray[i] = x;
-        radius = x;
+function computeRadius(depth, json, text){
+    if(depth > 1) {
+        for (var obj in json) {
+            if (obj !== 'count') {
+                var desc = text + " - " + obj;
+                computeRadius(depth - 1, json[obj], desc);
+            }
+        }
     }
-    return radiusArray;
+    json['childrenRadius'] = 50;
+    var count = Object.keys(json).length - 2;
+    if(count > 1) {
+        var baseAngle = 2 * Math.PI / count / 2;
+        var radius;
+        if(depth === 1){
+            radius = getMaxCount(json);
+        }
+        else{
+            radius = getMaxRadius(json);
+        }
+        json['childrenRadius'] = (radius * 2 + radius) / 2 / Math.sin(baseAngle);
+    }
 }
 
-function getBaseRadius(json, count) {
+function getMaxCount(json) {
     var max = 0;
     for(var obj in json){
         if(json[obj]['count'] > max){
             max = json[obj]['count'];
         }
     }
-    max /= delimiter;
-    max = max < 50 ? 50 : max;
+    return max / delimiter < 50 ? 50 : max / delimiter;
+}
 
+function getMaxRadius(json) {
+    var max = 0;
+    for(var obj in json){
+        if(json[obj]['childrenRadius'] > max){
+            max = json[obj]['childrenRadius'];
+        }
+    }
+    return max;
 }
 
 function getCountsFromDataset(json) {
@@ -379,34 +399,6 @@ function processData(json) {
     json['count']++;
     return json;
 }
-
-/* function processAge(json, recordID, levelID) {
-    if(dataset[recordID][levels[levelID]] >= minAge1 && dataset[recordID][levels[levelID]] <= maxAge1){
-        if(json[age1] == null){
-            json[age1] = 0;
-        }
-        json[age1]++;
-    }
-    else if(dataset[recordID][levels[levelID]] >= minAge2 && dataset[recordID][levels[levelID]] <= maxAge2){
-        if(json[age2] == null){
-            json[age2] = 0;
-        }
-        json[age2]++;
-    }
-    else if(dataset[recordID][levels[levelID]] >= minAge3 && dataset[recordID][levels[levelID]] <= maxAge3){
-        if(json[age3] == null){
-            json[age3] = 0;
-        }
-        json[age3]++;
-    }
-    else if(dataset[recordID][levels[levelID]] >= minAge4 && dataset[recordID][levels[levelID]] <= maxAge4){
-        if(json[age4] == null){
-            json[age4] = 0;
-        }
-        json[age4]++;
-    }
-    return json;
-} */
 
 function makeTextSprite( message, parameters ) {
     if ( parameters === undefined ) parameters = {};
@@ -497,7 +489,6 @@ function isCorrectLevels(obj) {
 
 //Listener functions
 function onDocumentMouseDown( event ) {
-    //event.preventDefault();
     mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
     mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
 
@@ -507,43 +498,40 @@ function onDocumentMouseDown( event ) {
 
     var intersects = raycaster.intersectObjects( nodes );
     if ( intersects.length > 0 ) {
-        if(intersects[0].object['data'] !== undefined) {
-            console.log(intersects[0].object['expanded']);
-            if (intersects[0].object['expanded'] !== undefined) {
-                if (intersects[0].object['expanded'] !== true) {
-                    console.log("Expanding sub-tree");
-                    // console.log(intersects[0].object['name']);
-                    // console.log(intersects[0].object['data']);
-                    depth = 1;
-                    var json = intersects[0].object['data'];
-                    var count = Object.keys(json).length - 1;
-                    var radiusArray = computeRadius(depth, count);
-                    // console.log(radiusArray);
-                    intersects[0].object['expanded'] = true;
-                    intersects[0].object['children'] =
-                        generateConeTree(radiusArray, depth, intersects[0].object.position, json, intersects[0].object['name']);
-                }
-                else{
-                    console.log("Collapsing sub-tree");
-                    collapse(intersects[0].object);
+        if(event.which === 1) {
+            if (intersects[0].object['data'] !== undefined) {
+                console.log(intersects[0].object['expanded']);
+                if (intersects[0].object['expanded'] !== undefined) {
+                    if (intersects[0].object['expanded'] !== true) {
+                        console.log("Expanding sub-tree");
+                        // console.log(intersects[0].object['name']);
+                        // console.log(intersects[0].object['data']);
+                        var json = intersects[0].object['data'];
+                        var count = Object.keys(json).length - 1;
+                        var radiusArray = computeRadius(1, count);
+                        // console.log(radiusArray);
+                        intersects[0].object['expanded'] = true;
+                        intersects[0].object['children'] =
+                            generateConeTree(radiusArray, 1, intersects[0].object.position, json, intersects[0].object['name']);
+                    }
+                    else {
+                        console.log("Collapsing sub-tree");
+                        collapse(intersects[0].object);
+                    }
+                    refreshRadius(intersects[0].object);
                 }
             }
         }
-    }
-}
-
-function onDocumentMouseMove( event ) {
-    event.preventDefault();
-    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-    raycaster.setFromCamera( mouse, camera );
-    var intersects = raycaster.intersectObjects( scene.children );
-    if ( intersects.length > 0 ) {
-        modalContent.innerHTML = intersects[0].object['name'] + '<br/>' + intersects[0].object['count'];
-        modal.style.display = "block";
-    }
-    else{
-        modal.style.display = "none";
+        else if (event.which === 3){
+            if ( intersects.length > 0 ) {
+                modalContent.innerHTML = intersects[0].object['name'] + '<br/>' + "Number of people is " + intersects[0].object['count'];
+                modal.style.display = "block";
+            }
+            else{
+                modal.style.display = "none";
+            }
+            console.log(intersects[0].object['childrenRadius']);
+        }
     }
 }
 
@@ -597,4 +585,22 @@ function collapse(node) {
     }
     node['expanded'] = false;
     node['children'] = [];
+}
+
+function refreshRadius(node) {
+    var result = false;
+    for(var i = 0; i <  node['children'].length; i++){
+        for(var j = i + 1; j < node['children'].length; j++){
+            if(node['children'][i] !== node['children'][j]){
+                var distance = node['children'][i].position.distanceTo(node['children'][j].position);
+                if(distance < node['children'][i].geometry.parameters.radius + node['children'][j].geometry.parameters.radius){
+                    console.log("Nodes " + node['children'][i]['name'] + " and " + node['children'][j]['name'] + " are colliding!");
+                    result = true;
+                }
+            }
+        }
+    }
+    if(result){
+
+    }
 }
