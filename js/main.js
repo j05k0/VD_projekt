@@ -14,7 +14,7 @@ var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
 
 // Init of the main camera
-var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200000);
+var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 20000000);
 camera.position.set(2800, 2800, 2800);
 camera.lookAt(new THREE.Vector3(0, -3000, 0));
 
@@ -33,10 +33,15 @@ var light2 = new THREE.SpotLight(0xffffff, 1);
 light2.position.set(-190000, 160000, -190000);
 light2.castShadow = true;
 scene.add(light2);
+var light3 = new THREE.SpotLight(0xffffff, 1);
+light3.position.set(0, -300000, 0);
+light3.castShadow = true;
+scene.add(light3);
+
 
 //Controls for moving of camera
 var controls = new THREE.OrbitControls( camera, renderer.domElement );
-controls.panningMode = THREE.HorizontalPanning;
+// controls.panningMode = THREE.HorizontalPanning;
 
 var projector = new THREE.Projector();
 
@@ -134,6 +139,7 @@ function createMenu() {
                 scene.background = new THREE.Color(0xcccccc);
                 scene.add(light1);
                 scene.add(light2);
+                scene.add(light3);
                 init();
             }
             else{
@@ -143,7 +149,21 @@ function createMenu() {
     };
 
     var filter = {
-        'Max count': 0
+        'Operator' : 'Less',
+        'Count': 0
+    };
+
+    var labels = {
+        'Workclass': false,
+        'Education': false,
+        'Marital_status': false,
+        'Occupation': false,
+        'Relationship': false,
+        'Race': false,
+        'Sex': false,
+        'Hours_per_week': false,
+        'Native_country': false,
+        'Age': false
     };
 
     var gui = new dat.gui.GUI();
@@ -156,17 +176,55 @@ function createMenu() {
     layers[i] = orderFolder.add(order, 'Render view');
 
     var filterFolder = gui.addFolder("Filter");
-    var controlCount = filterFolder.add(filter, "Max count").name('Max count').min(0).max(dataset.length).step(1);
+    filterFolder.add(filter, "Operator", ["Less", "Greater"]);
+    var controlCount = filterFolder.add(filter, "Count").name('Count').min(0).max(dataset.length).step(1);
     controlCount.onChange(function () {
-        for (var i = 0; i < nodes.length; i++){
+        for(var i = 0; i < nodes.length; i++) {
             nodes[i].material.color.setHex(0xff0000);
+            nodes[i].material.opacity = 1;
         }
-        for (i = 0; i < nodes.length; i++){
-            if(nodes[i]['count'] > filter["Max count"]){
-                nodes[i].material.color.setHex(0x0000ff);
-            }
+        switch (filter.Operator) {
+            case "Less":
+                for (i = 0; i < nodes.length; i++) {
+                    if (nodes[i]['count'] >= filter["Count"]) {
+                        nodes[i].material.color.setHex(0x0000ff);
+                        nodes[i].material.opacity = 0.2;
+                    }
+                }
+                break;
+            case "Greater":
+                for (i = 0; i < nodes.length; i++) {
+                    if (nodes[i]['count'] < filter["Count"]) {
+                        nodes[i].material.color.setHex(0x0000ff);
+                        nodes[i].material.opacity = 0.2;
+                    }
+                }
+                break;
         }
     });
+
+    var labelsFolder = gui.addFolder('Labels');
+    for (i = 0; i < levels.length; i++){
+        labelsFolder.add(labels, levels[i]).onChange(function (value) {
+            var level;
+            for(var i = 0; i < levels.length; i++){
+                if(levels[i] === this.property){
+                    level = i + 1;
+                    break;
+                }
+            }
+            for(i = 0; i < nodes.length; i++){
+                if(nodes[i]['depth'] === level){
+                    if(value) {
+                        scene.add(nodes[i]['spritey']);
+                    }
+                    else{
+                        scene.remove(nodes[i]['spritey']);
+                    }
+                }
+            }
+        });
+    }
     init();
 }
 
@@ -174,7 +232,7 @@ function init() {
     counts = getCountsFromDataset(counts);
 
     var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
-    var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
+    var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, transparent: true, opacity: 1});
     var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.castShadow = true;
     sphere.receiveShadow = false;
@@ -190,6 +248,7 @@ function init() {
     var spritey = makeTextSprite(" " + sphere['name'] + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
     spritey.position.set(basePosition.x + 50, basePosition.y + sphere.geometry.parameters.radius, basePosition.z);
     sphere['spritey'] = spritey;
+    scene.add(spritey);
 
     var text = "Adults";
     delimiter = 50;
@@ -245,7 +304,7 @@ function generateConeTree(depth, parent, json, text) {
             var spriteZ = spriteRadius * Math.sin(angle) + parentPosition.z;
             angle += baseAngle;
             var sphereGeometry = new THREE.SphereBufferGeometry(sphereRadius, 32, 32);
-            var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
+            var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, transparent: true, opacity: 1});
             var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
             var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphere.castShadow = true;
@@ -271,7 +330,6 @@ function generateConeTree(depth, parent, json, text) {
             spritey.position.set(spriteX, sphere.position.y, spriteZ);
             spritey['name'] = "sprite " + desc;
             sphere['spritey'] = spritey;
-            // sprites.push(spritey);
 
             var lineGeometry = new THREE.Geometry();
             lineGeometry.vertices.push(parentPosition);
@@ -637,6 +695,10 @@ function translateNodes(node) {
         lineGeometry.vertices.push(parentPosition);
         lineGeometry.vertices.push(node['children'][child].position);
         node['children'][child]['line'].geometry = lineGeometry;
+        var spriteRadius = radius + node['children'][child].geometry.parameters.radius;
+        var spriteX = spriteRadius * Math.cos(angle) + parentPosition.x;
+        var spriteZ = spriteRadius * Math.sin(angle) + parentPosition.z;
+        node['children'][child]['spritey'].position.set(spriteX, node['children'][child].position.y, spriteZ);
         angle += baseAngle;
         if(node['children'][child]['expanded']){
             translateNodes(node['children'][child]);
