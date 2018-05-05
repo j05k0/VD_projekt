@@ -71,22 +71,15 @@ window.addEventListener( 'resize', onWindowResize, false );
 // The base position of the root node
 var basePosition = new THREE.Vector3(0, 200, 0);
 
-// The basic radius for the deepest level
-var baseRadius = 500;
-
 // Distance between 2 levels of the tree
 var levelShift = 2000;
 var delimiter = 150;
 var dataset;
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
     "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
-var age1 = '<17,25>', age2 = '<26,40>', age3 = '<41, 65>', age4 = '<66, 90>';
-var minAge1 = 17, maxAge1 = 25;
-var minAge2 = 26, maxAge2 = 40;
-var minAge3 = 41, maxAge3 = 65;
-var minAge4 = 66, maxAge4 = 90;
 var nodes = [], lines = [], sprites = [];
-var depth = 4;
+var counts = {};
+var depth = 3;
 var duration = 750;
 
 $.when(csvAjax()).then(createMenu);
@@ -130,6 +123,10 @@ function createMenu() {
             if(isCorrectLevels(this)) {
                 levels = [];
                 nodes = [];
+                lines = [];
+                sprites = [];
+                counts = {};
+                delimiter = 150;
                 for (var i = 0; i < 10; i++) {
                     levels.push(this[(i + 1) + ". layer"]);
                 }
@@ -137,7 +134,6 @@ function createMenu() {
                 scene.background = new THREE.Color(0xcccccc);
                 scene.add(light1);
                 scene.add(light2);
-                delimiter = 150;
                 init();
             }
             else{
@@ -175,8 +171,7 @@ function createMenu() {
 }
 
 function init() {
-    var counts = {};
-    counts = getCountsFromDataset(counts, 0);
+    counts = getCountsFromDataset(counts);
 
     var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000});
@@ -188,6 +183,7 @@ function init() {
     sphere['name'] = "Adults - all records";
     sphere['data'] = counts;
     sphere['expanded'] = depth > 1;
+    sphere['depth'] = 0;
     scene.add(sphere);
     nodes.push(sphere);
     console.log(sphere);
@@ -199,7 +195,7 @@ function init() {
     delimiter = 50;
     computeRadius(depth, counts, text);
     // sphere['childrenRadius'] = radiusArray[depth - 1];
-    sphere['children'] = generateConeTree(depth, sphere.position, counts, text);
+    sphere['children'] = generateConeTree(depth, sphere, counts, text);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
     // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00 } )
@@ -223,13 +219,14 @@ function animate() {
 //**********************
 
 // Generating cone tree
-function generateConeTree(depth, parentPosition, json, text) {
-    var baseAngle = 2 * Math.PI / (Object.keys(json).length - 2);
+function generateConeTree(depth, parent, json, text) {
+    var parentPosition = parent.position;
+    var baseAngle = 2 * Math.PI / (Object.keys(json).length - 3);
     var angle = baseAngle;
     var radius = json['childrenRadius'];
     var children = [];   // This is the array of the children for the node on upper level
     for(var obj in json){
-        if (obj !== 'count' && obj !== 'childrenRadius') {
+        if (obj !== 'count' && obj !== 'childrenRadius' && obj !== 'depth') {
             var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
             var z = radius * Math.sin(angle) + parentPosition.z;
@@ -252,6 +249,7 @@ function generateConeTree(depth, parentPosition, json, text) {
             sphere['name'] = desc;
             sphere['data'] = json[obj];
             sphere['expanded'] = depth > 1;
+            sphere['depth'] = parent['depth'] + 1;
             // sphere['childrenRadius'] = radiusArray[depth - 2];
             scene.add(sphere);
             nodes.push(sphere);
@@ -272,7 +270,7 @@ function generateConeTree(depth, parentPosition, json, text) {
             lines.push(line);
 
             if (depth > 1) {
-                sphere['children'] = generateConeTree(depth - 1, sphere.position, json[obj], desc);
+                sphere['children'] = generateConeTree(depth - 1, sphere, json[obj], desc);
             }
         }
     }
@@ -283,14 +281,14 @@ function generateConeTree(depth, parentPosition, json, text) {
 function computeRadius(depth, json, text){
     if(depth > 1) {
         for (var obj in json) {
-            if (obj !== 'count') {
+            if (obj !== 'count' && obj !== 'depth') {
                 var desc = text + " - " + obj;
                 computeRadius(depth - 1, json[obj], desc);
             }
         }
     }
     json['childrenRadius'] = 50;
-    var count = Object.keys(json).length - 2;
+    var count = Object.keys(json).length - 3;
     if(count > 1) {
         var baseAngle = 2 * Math.PI / count / 2;
         var radius;
@@ -326,56 +324,58 @@ function getMaxRadius(json) {
 
 function getCountsFromDataset(json) {
     //json[levels[levelId]] = {};
-    json = {'count': dataset.length};
+    var depth = 1;
+    json = {'count': dataset.length, 'depth': depth};
     var id = 0;
     for(var i = 0; i < dataset.length; i++){
+        depth = 1;
         id = 0;
-        json[dataset[i][levels[id]]] = processData(json[dataset[i][levels[id]]]);
+        json[dataset[i][levels[id]]] = processData(json[dataset[i][levels[id]]], ++depth);
 
         var tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
-        tmp = processData(tmp);
+        tmp = processData(tmp, ++depth);
         id = 0;
         json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]] = tmp;
 
@@ -392,11 +392,12 @@ function getCountsFromDataset(json) {
     return json;
 }
 
-function processData(json) {
+function processData(json, depth) {
     if(json == null){
         json = {'count': 0};
     }
     json['count']++;
+    json['depth'] = depth;
     return json;
 }
 
@@ -496,6 +497,7 @@ function onDocumentMouseDown( event ) {
     projector.unprojectVector( vector, camera );
     raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
 
+    //TODO make this function to dynamically compute radius based on possible intersections
     var intersects = raycaster.intersectObjects( nodes );
     if ( intersects.length > 0 ) {
         if(event.which === 1) {
@@ -504,15 +506,17 @@ function onDocumentMouseDown( event ) {
                 if (intersects[0].object['expanded'] !== undefined) {
                     if (intersects[0].object['expanded'] !== true) {
                         console.log("Expanding sub-tree");
-                        // console.log(intersects[0].object['name']);
-                        // console.log(intersects[0].object['data']);
                         var json = intersects[0].object['data'];
-                        var count = Object.keys(json).length - 1;
-                        var radiusArray = computeRadius(1, count);
-                        // console.log(radiusArray);
                         intersects[0].object['expanded'] = true;
+                        getActualDepth();
+                        if(depth < intersects[0].object['depth'] + 1){
+                            depth++;
+                        }
+                        console.log('Actual depth of the tree is ' + depth);
+                        var text = "Adults";
+                        computeRadius(depth, counts, text);
                         intersects[0].object['children'] =
-                            generateConeTree(radiusArray, 1, intersects[0].object.position, json, intersects[0].object['name']);
+                            generateConeTree(1, intersects[0].object, json, intersects[0].object['name']);
                     }
                     else {
                         console.log("Collapsing sub-tree");
@@ -602,5 +606,14 @@ function refreshRadius(node) {
     }
     if(result){
 
+    }
+}
+
+function getActualDepth() {
+    depth = 0;
+    for(var i = 0; i < nodes.length; i++){
+        if(nodes[i]['depth'] > depth){
+            depth = nodes[i]['depth'];
+        }
     }
 }
