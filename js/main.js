@@ -189,12 +189,12 @@ function init() {
     console.log(sphere);
     var spritey = makeTextSprite(" " + sphere['name'] + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
     spritey.position.set(basePosition.x + 50, basePosition.y + sphere.geometry.parameters.radius, basePosition.z);
-    scene.add( spritey );
+    sphere['spritey'] = spritey;
 
     var text = "Adults";
     delimiter = 50;
-    computeRadius(depth, counts, text);
-    // sphere['childrenRadius'] = radiusArray[depth - 1];
+    computeRadius(depth, counts);
+    sphere['childrenRadius'] = counts['childrenRadius'];
     sphere['children'] = generateConeTree(depth, sphere, counts, text);
 
     // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
@@ -230,7 +230,13 @@ function generateConeTree(depth, parent, json, text) {
             var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
             var z = radius * Math.sin(angle) + parentPosition.z;
-            var sphereRadius = json[obj]['count'] / delimiter;
+            var sphereRadius;
+            if(json[obj]['count'] !== undefined) {
+                sphereRadius = json[obj]['count'] / delimiter;
+            }
+            else{
+                sphereRadius = json[obj] / delimiter;
+            }
             if(sphereRadius < 50){
                 sphereRadius =  50;
             }
@@ -245,12 +251,18 @@ function generateConeTree(depth, parent, json, text) {
             sphere.castShadow = true;
             sphere.receiveShadow = false;
             sphere.position.set(x, parentPosition.y - levelShift, z);
-            sphere['count'] = json[obj]['count'];
+            if(json[obj]['count'] !== undefined) {
+                sphere['count'] = json[obj]['count'];
+            }
+            else{
+                sphere['count'] = json[obj];
+            }
             sphere['name'] = desc;
             sphere['data'] = json[obj];
             sphere['expanded'] = depth > 1;
             sphere['depth'] = parent['depth'] + 1;
-            // sphere['childrenRadius'] = radiusArray[depth - 2];
+            sphere['childrenRadius'] = json[obj]['childrenRadius'];
+            sphere['parentNode'] = parent;
             scene.add(sphere);
             nodes.push(sphere);
             children.push(sphere);
@@ -258,8 +270,8 @@ function generateConeTree(depth, parent, json, text) {
             var spritey = makeTextSprite(" " + obj + " ", { fontsize: 25, backgroundColor: {r:255, g:100, b:100, a:0.75} } );
             spritey.position.set(spriteX, sphere.position.y, spriteZ);
             spritey['name'] = "sprite " + desc;
-            scene.add( spritey );
-            sprites.push(spritey);
+            sphere['spritey'] = spritey;
+            // sprites.push(spritey);
 
             var lineGeometry = new THREE.Geometry();
             lineGeometry.vertices.push(parentPosition);
@@ -267,7 +279,7 @@ function generateConeTree(depth, parent, json, text) {
             var line = new THREE.Line(lineGeometry, lineMaterial);
             line['name'] = "line " + desc;
             scene.add(line);
-            lines.push(line);
+            sphere['line'] = line;
 
             if (depth > 1) {
                 sphere['children'] = generateConeTree(depth - 1, sphere, json[obj], desc);
@@ -278,12 +290,11 @@ function generateConeTree(depth, parent, json, text) {
 }
 
 // Compute the radius for different levels of depth
-function computeRadius(depth, json, text){
+function computeRadius(depth, json){
     if(depth > 1) {
         for (var obj in json) {
             if (obj !== 'count' && obj !== 'depth') {
-                var desc = text + " - " + obj;
-                computeRadius(depth - 1, json[obj], desc);
+                computeRadius(depth - 1, json[obj]);
             }
         }
     }
@@ -497,7 +508,6 @@ function onDocumentMouseDown( event ) {
     projector.unprojectVector( vector, camera );
     raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
 
-    //TODO make this function to dynamically compute radius based on possible intersections
     var intersects = raycaster.intersectObjects( nodes );
     if ( intersects.length > 0 ) {
         if(event.which === 1) {
@@ -508,13 +518,14 @@ function onDocumentMouseDown( event ) {
                         console.log("Expanding sub-tree");
                         var json = intersects[0].object['data'];
                         intersects[0].object['expanded'] = true;
-                        getActualDepth();
+                        refreshDepth();
                         if(depth < intersects[0].object['depth'] + 1){
                             depth++;
                         }
                         console.log('Actual depth of the tree is ' + depth);
-                        var text = "Adults";
-                        computeRadius(depth, counts, text);
+                        computeRadius(depth, counts);
+                        intersects[0].object['childrenRadius'] = json['childrenRadius'];
+
                         intersects[0].object['children'] =
                             generateConeTree(1, intersects[0].object, json, intersects[0].object['name']);
                     }
@@ -522,6 +533,8 @@ function onDocumentMouseDown( event ) {
                         console.log("Collapsing sub-tree");
                         collapse(intersects[0].object);
                     }
+                    console.log(counts);
+                    console.log(nodes[0]);
                     refreshRadius(intersects[0].object);
                 }
             }
@@ -580,11 +593,11 @@ function collapse(node) {
         scene.remove(selected);
 
         var selectedLine = scene.getObjectByName("line " + selected.name);
-        removeByAttr(lines, 'name', selectedLine.name);
+        // removeByAttr(lines, 'name', selectedLine.name);
         scene.remove(selectedLine);
 
         var selectedSprite = scene.getObjectByName("sprite " + selected.name);
-        removeByAttr(sprites, 'name', selectedSprite.name);
+        // removeByAttr(sprites, 'name', selectedSprite.name);
         scene.remove(selectedSprite);
     }
     node['expanded'] = false;
@@ -593,23 +606,45 @@ function collapse(node) {
 
 function refreshRadius(node) {
     var result = false;
-    for(var i = 0; i <  node['children'].length; i++){
-        for(var j = i + 1; j < node['children'].length; j++){
-            if(node['children'][i] !== node['children'][j]){
-                var distance = node['children'][i].position.distanceTo(node['children'][j].position);
-                if(distance < node['children'][i].geometry.parameters.radius + node['children'][j].geometry.parameters.radius){
-                    console.log("Nodes " + node['children'][i]['name'] + " and " + node['children'][j]['name'] + " are colliding!");
-                    result = true;
-                }
+    for(var n in nodes){
+        if(nodes[n] !== node && nodes[n]['depth'] === node['depth']
+            && nodes[n]['expanded'] && node['expanded']){
+            var distance = node.position.distanceTo(nodes[n].position);
+            if(distance < node['childrenRadius'] + nodes[n]['childrenRadius']){
+                result = true;
+                console.log('Nodes ' + node['name'] + " and " + nodes[n]['name'] + " are colliding");
             }
         }
     }
     if(result){
-
+       translateNodes(node['parentNode']);
+        if(node['parentNode'] !== undefined){
+            refreshRadius(node['parentNode']);
+        }
     }
 }
 
-function getActualDepth() {
+function translateNodes(node) {
+    var radius = node['data']['childrenRadius'];
+    node['childrenRadius'] = radius;
+    var parentPosition = node.position;
+    var baseAngle = 2 * Math.PI / (Object.keys(node['data']).length - 3);
+    var angle = baseAngle;
+    for(var child in node['children']){
+        node['children'][child].position.x = radius * Math.cos(angle) + parentPosition.x;
+        node['children'][child].position.z = radius * Math.sin(angle) + parentPosition.z;
+        var lineGeometry = new THREE.Geometry();
+        lineGeometry.vertices.push(parentPosition);
+        lineGeometry.vertices.push(node['children'][child].position);
+        node['children'][child]['line'].geometry = lineGeometry;
+        angle += baseAngle;
+        if(node['children'][child]['expanded']){
+            translateNodes(node['children'][child]);
+        }
+    }
+}
+
+function refreshDepth() {
     depth = 0;
     for(var i = 0; i < nodes.length; i++){
         if(nodes[i]['depth'] > depth){
