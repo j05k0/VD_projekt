@@ -596,6 +596,8 @@ function onDocumentMouseDown( event ) {
                     else {
                         console.log("Collapsing sub-tree");
                         collapse(intersects[0].object);
+                        computeRadius(1, counts);
+                        translateNodes(nodes[0]);
                     }
                     console.log(counts);
                     console.log(nodes[0]);
@@ -700,22 +702,27 @@ function collapse(node) {
 
 function refreshRadius(node) {
     var result = false;
-    for(var n in nodes){
-        if(nodes[n] !== node && nodes[n]['depth'] === node['depth']
-            && nodes[n]['expanded'] && node['expanded']){
-            var distance = node.position.distanceTo(nodes[n].position);
-            if(distance < node['childrenRadius'] + nodes[n]['childrenRadius']){
-                result = true;
-                console.log('Nodes ' + node['name'] + " and " + nodes[n]['name'] + " are colliding");
+    var depth = 1;
+    do {
+        result = false;
+        computeRadius(depth++, counts);
+        for (var n in nodes) {
+            if (nodes[n] !== node && nodes[n]['depth'] === node['depth']
+                && nodes[n]['expanded'] && node['expanded']) {
+                var distance = node.position.distanceTo(nodes[n].position);
+                if (distance < node['childrenRadius'] + nodes[n]['childrenRadius']) {
+                    result = true;
+                    console.log('Nodes ' + node['name'] + " and " + nodes[n]['name'] + " are colliding");
+                }
             }
         }
-    }
-    if(result){
-       translateNodes(node['parentNode']);
-        if(node['parentNode'] !== undefined){
-            refreshRadius(node['parentNode']);
+        if (result) {
+            translateNodes(node['parentNode']);
+            if (node['parentNode'] !== undefined) {
+                refreshRadius(node['parentNode']);
+            }
         }
-    }
+    } while(result);
 }
 
 function translateNodes(node) {
