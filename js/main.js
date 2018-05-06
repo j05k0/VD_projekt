@@ -51,6 +51,7 @@ var mouse = new THREE.Vector2();
 
 // Get the modal and its content
 var modal = document.getElementById('myModal');
+modal.style.display = 'none';
 var modalContent = document.getElementById('myModalContent');
 
 // Get the <span> element that closes the modal
@@ -70,6 +71,7 @@ window.onclick = function(event) {
 
 //Initialization of listeners
 document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 document.addEventListener("contextmenu", function(e) { e.preventDefault(); });
 window.addEventListener( 'resize', onWindowResize, false );
 
@@ -250,7 +252,7 @@ function init() {
     sphere['spritey'] = spritey;
     scene.add(spritey);
 
-    var text = "Adults";
+    var text = "";
     delimiter = 50;
     computeRadius(depth, counts);
     sphere['childrenRadius'] = counts['childrenRadius'];
@@ -286,7 +288,6 @@ function generateConeTree(depth, parent, json, text) {
     var children = [];   // This is the array of the children for the node on upper level
     for(var obj in json){
         if (obj !== 'count' && obj !== 'childrenRadius' && obj !== 'depth') {
-            var desc = text + " - " + obj;
             var x = radius * Math.cos(angle) + parentPosition.x;
             var z = radius * Math.sin(angle) + parentPosition.z;
             var sphereRadius;
@@ -305,7 +306,6 @@ function generateConeTree(depth, parent, json, text) {
             angle += baseAngle;
             var sphereGeometry = new THREE.SphereBufferGeometry(sphereRadius, 32, 32);
             var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, transparent: true, opacity: 1});
-            var lineMaterial = new THREE.LineBasicMaterial( { color: 0x0000ff } );
             var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphere.castShadow = true;
             sphere.receiveShadow = false;
@@ -316,6 +316,7 @@ function generateConeTree(depth, parent, json, text) {
             else{
                 sphere['count'] = json[obj];
             }
+            var desc = text + levels[parent['depth']] + ': ' + obj + '<br/>';
             sphere['name'] = desc;
             sphere['data'] = json[obj];
             sphere['expanded'] = depth > 1;
@@ -331,6 +332,7 @@ function generateConeTree(depth, parent, json, text) {
             spritey['name'] = "sprite " + desc;
             sphere['spritey'] = spritey;
 
+            var lineMaterial = new THREE.LineBasicMaterial( { color: 0x558000 } );
             var lineGeometry = new THREE.Geometry();
             lineGeometry.vertices.push(parentPosition);
             lineGeometry.vertices.push(sphere.position);
@@ -584,8 +586,12 @@ function onDocumentMouseDown( event ) {
                         computeRadius(depth, counts);
                         intersects[0].object['childrenRadius'] = json['childrenRadius'];
 
+                        var text = '';
+                        if(intersects[0].object !== nodes[0]){
+                            text = intersects[0].object['name'];
+                        }
                         intersects[0].object['children'] =
-                            generateConeTree(1, intersects[0].object, json, intersects[0].object['name']);
+                            generateConeTree(1, intersects[0].object, json, text);
                     }
                     else {
                         console.log("Collapsing sub-tree");
@@ -599,7 +605,9 @@ function onDocumentMouseDown( event ) {
         }
         else if (event.which === 3){
             if ( intersects.length > 0 ) {
-                modalContent.innerHTML = intersects[0].object['name'] + '<br/>' + "Number of people is " + intersects[0].object['count'];
+                modalContent.innerHTML =
+                    intersects[0].object['name']
+                    + '<br/>' + "Number of people is " + intersects[0].object['count'];
                 modal.style.display = "block";
             }
             else{
@@ -608,6 +616,34 @@ function onDocumentMouseDown( event ) {
             console.log(intersects[0].object['childrenRadius']);
         }
     }
+}
+
+function onDocumentMouseMove( event ) {
+    event.preventDefault();
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    raycaster.setFromCamera( mouse, camera );
+    var intersects = raycaster.intersectObjects( nodes );
+    if ( intersects.length > 0 && modal.style.display === 'none') {
+        intersects[0].object.material.color.setHex(0x0000ff);
+        intersects[0].object['line'].material.color.setHex(0x0000ff);
+        var node = intersects[0].object['parentNode'];
+        while(node !== nodes[0]){
+            node.material.color.setHex(0x0000ff);
+            node['line'].material.color.setHex(0x0000ff);
+            node = node['parentNode'];
+        }
+        node.material.color.setHex(0x0000ff);
+    }
+    else if (modal.style.display === 'none'){
+        for(var i = 0; i < nodes.length; i++) {
+            nodes[i].material.color.setHex(0xff0000);
+            if(i > 0) {
+                nodes[i]['line'].material.color.setHex(0x558000);
+            }
+        }
+    }
+
 }
 
 function onWindowResize() {
