@@ -152,7 +152,10 @@ function createMenu() {
 
     var filter = {
         'Operator' : 'Less',
-        'Count': 0
+        'Count': 0,
+        Reset: function () {
+            resetFilter()
+        }
     };
 
     var labels = {
@@ -178,9 +181,10 @@ function createMenu() {
     layers[i] = orderFolder.add(order, 'Render view');
 
     var filterFolder = gui.addFolder("Filter");
-    filterFolder.add(filter, "Operator", ["Less", "Greater"]);
+    filterFolder.add(filter, "Operator", ["Less", "Greater"]).onChange(updateNodes);
     var controlCount = filterFolder.add(filter, "Count").name('Count').min(0).max(dataset.length).step(1);
-    controlCount.onChange(function () {
+    controlCount.onChange(updateNodes);
+    function updateNodes() {
         for(var i = 0; i < nodes.length; i++) {
             nodes[i].material.color.setHex(0xff0000);
             nodes[i].material.opacity = 1;
@@ -189,7 +193,7 @@ function createMenu() {
             case "Less":
                 for (i = 0; i < nodes.length; i++) {
                     if (nodes[i]['count'] >= filter["Count"]) {
-                        nodes[i].material.color.setHex(0x0000ff);
+                        nodes[i].material.color.setHex(0x558000);
                         nodes[i].material.opacity = 0.2;
                     }
                 }
@@ -197,13 +201,19 @@ function createMenu() {
             case "Greater":
                 for (i = 0; i < nodes.length; i++) {
                     if (nodes[i]['count'] < filter["Count"]) {
-                        nodes[i].material.color.setHex(0x0000ff);
+                        nodes[i].material.color.setHex(0x558000);
                         nodes[i].material.opacity = 0.2;
                     }
                 }
                 break;
         }
-    });
+    }
+    filterFolder.add(filter, 'Reset');
+    function resetFilter() {
+        for(var n in nodes){
+            nodes[n].material.opacity = 1;
+        }
+    }
 
     var labelsFolder = gui.addFolder('Labels');
     for (i = 0; i < levels.length; i++){
@@ -227,6 +237,7 @@ function createMenu() {
             }
         });
     }
+
     init();
 }
 
@@ -523,7 +534,7 @@ function makeTextSprite( message, parameters ) {
     texture.needsUpdate = true;
 
     var spriteMaterial = new THREE.SpriteMaterial(
-        { map: texture, useScreenCoordinates: false } );
+        { map: texture } );
     var sprite = new THREE.Sprite( spriteMaterial );
     sprite.scale.set(500, 500, 1);
     return sprite;
@@ -596,8 +607,9 @@ function onDocumentMouseDown( event ) {
                     else {
                         console.log("Collapsing sub-tree");
                         collapse(intersects[0].object);
-                        computeRadius(1, counts);
-                        translateNodes(nodes[0]);
+                        // refreshDepth();
+                        // computeRadius(1, counts);
+                        // translateNodes(nodes[0]);
                     }
                     console.log(counts);
                     console.log(nodes[0]);
@@ -627,21 +639,31 @@ function onDocumentMouseMove( event ) {
     raycaster.setFromCamera( mouse, camera );
     var intersects = raycaster.intersectObjects( nodes );
     if ( intersects.length > 0 && modal.style.display === 'none') {
-        intersects[0].object.material.color.setHex(0x0000ff);
-        intersects[0].object['line'].material.color.setHex(0x0000ff);
-        var node = intersects[0].object['parentNode'];
-        while(node !== nodes[0]){
-            node.material.color.setHex(0x0000ff);
-            node['line'].material.color.setHex(0x0000ff);
-            node = node['parentNode'];
+        if(intersects[0].object.material.opacity === 1) {
+            intersects[0].object.material.color.setHex(0x0000ff);
+            if (intersects[0].object['line'] !== undefined) {
+                intersects[0].object['line'].material.color.setHex(0x0000ff);
+            }
+            intersects[0].object['spritey'].material.color.setHex(0x81d4fa);
+            var node = intersects[0].object['parentNode'];
+            if (node !== undefined) {
+                while (node !== nodes[0]) {
+                    node.material.color.setHex(0x0000ff);
+                    node['line'].material.color.setHex(0x0000ff);
+                    node = node['parentNode'];
+                }
+                node.material.color.setHex(0x0000ff);
+            }
         }
-        node.material.color.setHex(0x0000ff);
     }
     else if (modal.style.display === 'none'){
         for(var i = 0; i < nodes.length; i++) {
-            nodes[i].material.color.setHex(0xff0000);
-            if(i > 0) {
-                nodes[i]['line'].material.color.setHex(0x558000);
+            if(nodes[i].material.opacity === 1) {
+                nodes[i].material.color.setHex(0xff0000);
+                nodes[i]['spritey'].material.color.setHex(0xff6464);
+                if (i > 0) {
+                    nodes[i]['line'].material.color.setHex(0x558000);
+                }
             }
         }
     }
@@ -702,27 +724,22 @@ function collapse(node) {
 
 function refreshRadius(node) {
     var result = false;
-    var depth = 1;
-    do {
-        result = false;
-        computeRadius(depth++, counts);
-        for (var n in nodes) {
-            if (nodes[n] !== node && nodes[n]['depth'] === node['depth']
-                && nodes[n]['expanded'] && node['expanded']) {
-                var distance = node.position.distanceTo(nodes[n].position);
-                if (distance < node['childrenRadius'] + nodes[n]['childrenRadius']) {
-                    result = true;
-                    console.log('Nodes ' + node['name'] + " and " + nodes[n]['name'] + " are colliding");
-                }
+    for (var n in nodes) {
+        if (nodes[n] !== node && nodes[n]['depth'] === node['depth']
+            && nodes[n]['expanded'] && node['expanded']) {
+            var distance = node.position.distanceTo(nodes[n].position);
+            if (distance < node['childrenRadius'] + nodes[n]['childrenRadius'] + 100) {
+                result = true;
+                console.log('Nodes ' + node['name'] + " and " + nodes[n]['name'] + " are colliding");
             }
         }
-        if (result) {
-            translateNodes(node['parentNode']);
-            if (node['parentNode'] !== undefined) {
-                refreshRadius(node['parentNode']);
-            }
+    }
+    if (result) {
+        translateNodes(node['parentNode']);
+        if (node['parentNode'] !== undefined) {
+            refreshRadius(node['parentNode']);
         }
-    } while(result);
+    }
 }
 
 function translateNodes(node) {
