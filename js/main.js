@@ -83,7 +83,7 @@ var levelShift = 2000;
 var delimiter = 150;
 var dataset;
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
-    "Race", "Sex", "Hours_per_week", "Native_country", "Age"];
+    "Race", "Sex", "Hours_per_week", "Native_country", "Age", "Salary"];
 var nodes = [], lines = [], sprites = [];
 var counts = {};
 var depth = 3;
@@ -126,6 +126,7 @@ function createMenu() {
         '8. layer' : 'Hours_per_week',
         '9. layer' : 'Native_country',
         '10. layer' : 'Age',
+        '11. layer' : 'Salary',
         'Render view': function () {
             if(isCorrectLevels(this)) {
                 levels = [];
@@ -134,7 +135,7 @@ function createMenu() {
                 sprites = [];
                 counts = {};
                 delimiter = 150;
-                for (var i = 0; i < 10; i++) {
+                for (var i = 0; i < 11; i++) {
                     levels.push(this[(i + 1) + ". layer"]);
                 }
                 scene = new THREE.Scene();
@@ -168,7 +169,8 @@ function createMenu() {
         'Sex': false,
         'Hours_per_week': false,
         'Native_country': false,
-        'Age': false
+        'Age': false,
+        'Salary': false
     };
 
     var gui = new dat.gui.GUI();
@@ -176,7 +178,7 @@ function createMenu() {
 
     var layers =[];
     for (var i = 0; i < levels.length; i++){
-        layers[i] = orderFolder.add(order, (i + 1) + '. layer', ["Workclass", "Education", "Marital_status", "Occupation", "Relationship", "Race", "Sex", "Hours_per_week", "Native_country", "Age"]);
+        layers[i] = orderFolder.add(order, (i + 1) + '. layer', ["Workclass", "Education", "Marital_status", "Occupation", "Relationship", "Race", "Sex", "Hours_per_week", "Native_country", "Age", "Salary"]);
     }
     layers[i] = orderFolder.add(order, 'Render view');
 
@@ -459,15 +461,21 @@ function getCountsFromDataset(json) {
         tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
         tmp = processData(tmp, ++depth);
         id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]] = tmp;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
 
         id = 0;
-        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
+        tmp = json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]];
+        tmp = processData(tmp, ++depth);
+        id = 0;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = tmp;
+
+        id = 0;
+        if(json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] == null){
             id = 0;
-            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = 0;
+            json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]] = 0;
         }
         id = 0;
-        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]++;
+        json[dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id++]]][dataset[i][levels[id]]]++;
     }
     console.log(json);
     // console.log(JSON.stringify(json));
