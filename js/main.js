@@ -98,6 +98,13 @@ function csvAjax() {
     }).done(successCallback);
 }
 
+// function csvAjax() {
+//     return $.ajax({
+//         url: 'data/Adult_new_medium.csv',
+//         dataType: 'text'
+//     }).done(successCallback);
+// }
+
 function successCallback(data) {
     var lines = data.split("\n");
     var result = [];
