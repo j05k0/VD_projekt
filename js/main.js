@@ -329,7 +329,7 @@ function generateConeTree(depth, parent, json, text) {
             else{
                 sphere['count'] = json[obj];
             }
-            var desc = text + levels[parent['depth']] + ': ' + obj + '<br/>';
+            var desc = text + levels[parent['depth']] + ':<span class="tab">' + obj + '</span><br/>';
             sphere['name'] = desc;
             sphere['data'] = json[obj];
             sphere['expanded'] = depth > 1;
@@ -630,6 +630,14 @@ function onDocumentMouseDown( event ) {
                 modalContent.innerHTML =
                     intersects[0].object['name']
                     + '<br/>' + "Number of people is " + intersects[0].object['count'];
+                if(intersects[0].object['expanded']){
+                    modalContent.innerHTML += '<br/><br/>Information about next level ('+ levels[intersects[0].object['depth']] +'):<br/>';
+                    for(var obj in intersects[0].object['data']){
+                        if(obj !== 'count' && obj !== 'childrenRadius' && obj !== 'depth'){
+                            modalContent.innerHTML += obj + ':<span class="tab">' + intersects[0].object['data'][obj]['count'] + '</span><br/>';
+                        }
+                    }
+                }
                 modal.style.display = "block";
             }
             else{
