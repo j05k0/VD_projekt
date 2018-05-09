@@ -1,14 +1,3 @@
-THREE.SpriteAlignment = {};
-THREE.SpriteAlignment.topLeft = new THREE.Vector2( 1, -1 );
-THREE.SpriteAlignment.topCenter = new THREE.Vector2( 0, -1 );
-THREE.SpriteAlignment.topRight = new THREE.Vector2( -1, -1 );
-THREE.SpriteAlignment.centerLeft = new THREE.Vector2( 1, 0 );
-THREE.SpriteAlignment.center = new THREE.Vector2( 0, 0 );
-THREE.SpriteAlignment.centerRight = new THREE.Vector2( -1, 0 );
-THREE.SpriteAlignment.bottomLeft = new THREE.Vector2( 1, 1 );
-THREE.SpriteAlignment.bottomCenter = new THREE.Vector2( 0, 1 );
-THREE.SpriteAlignment.bottomRight = new THREE.Vector2( -1, 1 );
-
 // Init of the scene
 var scene = new THREE.Scene();
 scene.background = new THREE.Color(0xcccccc);
@@ -37,7 +26,6 @@ var light3 = new THREE.SpotLight(0xffffff, 1);
 light3.position.set(0, -300000, 0);
 light3.castShadow = true;
 scene.add(light3);
-
 
 //Controls for moving of camera
 var controls = new THREE.OrbitControls( camera, renderer.domElement );
@@ -80,31 +68,41 @@ var basePosition = new THREE.Vector3(0, 200, 0);
 
 // Distance between 2 levels of the tree
 var levelShift = 2000;
-var delimiter = 150;
+var delimiter;
 var dataset;
+// The basic level order of the dataset
 var levels = ["Workclass", "Education", "Marital_status", "Occupation", "Relationship",
     "Race", "Sex", "Hours_per_week", "Native_country", "Age", "Salary"];
 var nodes = [], lines = [], sprites = [];
 var counts = {};
 var depth = 3;
-var duration = 750;
+var numberOfLayers = 11;
 
+// Sprite alignment variables
+THREE.SpriteAlignment = {};
+THREE.SpriteAlignment.topLeft = new THREE.Vector2( 1, -1 );
+THREE.SpriteAlignment.topCenter = new THREE.Vector2( 0, -1 );
+THREE.SpriteAlignment.topRight = new THREE.Vector2( -1, -1 );
+THREE.SpriteAlignment.centerLeft = new THREE.Vector2( 1, 0 );
+THREE.SpriteAlignment.center = new THREE.Vector2( 0, 0 );
+THREE.SpriteAlignment.centerRight = new THREE.Vector2( -1, 0 );
+THREE.SpriteAlignment.bottomLeft = new THREE.Vector2( 1, 1 );
+THREE.SpriteAlignment.bottomCenter = new THREE.Vector2( 0, 1 );
+THREE.SpriteAlignment.bottomRight = new THREE.Vector2( -1, 1 );
+
+// Load dataset and then create menu
 $.when(csvAjax()).then(createMenu);
 
 function csvAjax() {
     return $.ajax({
         url: 'data/Adult_new.csv',
+        // url: 'data/Adult_new_medium.csv',
+        // url: 'data/Adult_new_small.csv',
         dataType: 'text'
     }).done(successCallback);
 }
 
-// function csvAjax() {
-//     return $.ajax({
-//         url: 'data/Adult_new_medium.csv',
-//         dataType: 'text'
-//     }).done(successCallback);
-// }
-
+// When dataset is successfully loaded, save it into JSON
 function successCallback(data) {
     var lines = data.split("\n");
     var result = [];
@@ -121,6 +119,7 @@ function successCallback(data) {
     dataset = result; //JSON
 }
 
+// Creation of dat.gui menu
 function createMenu() {
     var order = {
         '1. layer' : 'Workclass',
@@ -135,14 +134,14 @@ function createMenu() {
         '10. layer' : 'Age',
         '11. layer' : 'Salary',
         'Render view': function () {
+            // Firstly check the correctness of the level order, then re-create the scene
             if(isCorrectLevels(this)) {
                 levels = [];
                 nodes = [];
                 lines = [];
                 sprites = [];
                 counts = {};
-                delimiter = 150;
-                for (var i = 0; i < 11; i++) {
+                for (var i = 0; i < numberOfLayers; i++) {
                     levels.push(this[(i + 1) + ". layer"]);
                 }
                 scene = new THREE.Scene();
@@ -193,6 +192,7 @@ function createMenu() {
     filterFolder.add(filter, "Operator", ["Less", "Greater"]).onChange(updateNodes);
     var controlCount = filterFolder.add(filter, "Count").name('Count').min(0).max(dataset.length).step(1);
     controlCount.onChange(updateNodes);
+    // Color nodes according to the filter value and operator
     function updateNodes() {
         for(var i = 0; i < nodes.length; i++) {
             nodes[i].material.color.setHex(0xff0000);
@@ -247,13 +247,18 @@ function createMenu() {
         });
     }
 
+    // Init the cone-tree layout
     init();
 }
 
 function init() {
+    // Compute delimiters for root and other nodes
+    computeDelimiter();
+    // Load number of people for various levels into JSON
     counts = getCountsFromDataset(counts);
 
-    var sphereGeometry = new THREE.SphereBufferGeometry(dataset.length / delimiter, 32, 32);
+    // Create root node
+    var sphereGeometry = new THREE.SphereBufferGeometry(250, 32, 32);
     var sphereMaterial = new THREE.MeshPhongMaterial({color: 0xff0000, transparent: true, opacity: 1});
     var sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
     sphere.castShadow = true;
@@ -272,20 +277,11 @@ function init() {
     sphere['spritey'] = spritey;
     scene.add(spritey);
 
+    // Prepare the radius for the rest of the tree and create it
     var text = "";
-    delimiter = 50;
     computeRadius(depth, counts);
     sphere['childrenRadius'] = counts['childrenRadius'];
     sphere['children'] = generateConeTree(depth, sphere, counts, text);
-
-    // var planeGeometry = new THREE.PlaneBufferGeometry( 200, 200, 32, 32 );
-    // var planeMaterial = new THREE.MeshPhongMaterial( { color: 0x00ff00 } )
-    // var plane = new THREE.Mesh( planeGeometry, planeMaterial );
-    // plane.receiveShadow = true;
-    // scene.add( plane );
-
-    // var helper = new THREE.CameraHelper( light.shadow.camera );
-    // scene.add( helper );
 
     animate();
 }
@@ -381,7 +377,7 @@ function computeRadius(depth, json){
     json['childrenRadius'] = 50;
     var count = Object.keys(json).length - 3;
     if(count > 1) {
-        var baseAngle = 2 * Math.PI / count / 2;
+        var baseAngle = Math.PI / count;
         var radius;
         if(depth === 1){
             radius = getMaxCount(json);
@@ -572,10 +568,11 @@ function roundRect(ctx, x, y, w, h, r) {
     ctx.stroke();
 }
 
+// Check whether every level is chosen once before re-creating the scene
 function isCorrectLevels(obj) {
     var result = true;
-    for(var i = 0; i < 10; i++){
-        for(var j = 1; j < 10; j++){
+    for(var i = 0; i < numberOfLayers; i++){
+        for(var j = i + 1; j < numberOfLayers; j++){
             if(i !== j && obj[[(i + 1) + ". layer"]] === obj[[(j + 1) + ". layer"]]){
                 result = false;
                 break;
@@ -596,6 +593,8 @@ function onDocumentMouseDown( event ) {
 
     var intersects = raycaster.intersectObjects( nodes );
     if ( intersects.length > 0 ) {
+
+        // Left mouse button clicked, expand or collapse the sub-tree
         if(event.which === 1) {
             if (intersects[0].object['data'] !== undefined) {
                 console.log(intersects[0].object['expanded']);
@@ -632,6 +631,7 @@ function onDocumentMouseDown( event ) {
                 }
             }
         }
+        // Right mouse clicked, show detail of the node
         else if (event.which === 3){
             if ( intersects.length > 0 ) {
                 modalContent.innerHTML =
@@ -655,6 +655,7 @@ function onDocumentMouseDown( event ) {
     }
 }
 
+// Mouse moved, color the corresponding node and its path to the root.
 function onDocumentMouseMove( event ) {
     event.preventDefault();
     mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
@@ -698,29 +699,23 @@ function onWindowResize() {
     var height = window.innerHeight;
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    // cameraOrtho.left = - width / 2;
-    // cameraOrtho.right = width / 2;
-    // cameraOrtho.top = height / 2;
-    // cameraOrtho.bottom = - height / 2;
-    // cameraOrtho.updateProjectionMatrix();
-    // updateHUDSprites();
     renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
+// Function or removing value from array
 var removeByAttr = function(arr, attr, value){
     var i = arr.length;
     while(i--){
         if( arr[i]
             && arr[i].hasOwnProperty(attr)
             && (arguments.length > 2 && arr[i][attr] === value ) ){
-
             arr.splice(i,1);
-
         }
     }
     return arr;
 };
 
+// Function for collapsing the tree
 function collapse(node) {
     var count = node['children'].length;
     for(var i = 0; i < count; i++){
@@ -745,12 +740,14 @@ function collapse(node) {
     node['children'] = [];
 }
 
+// Refresh radius and check if there is overlapping on some layer
 function refreshRadius(node) {
     var result = false;
     for (var n in nodes) {
         if (nodes[n] !== node && nodes[n]['depth'] === node['depth']
             && nodes[n]['expanded'] && node['expanded']) {
             var distance = node.position.distanceTo(nodes[n].position);
+            // 100 is value to make sure that radiuses are not touching each other
             if (distance < node['childrenRadius'] + nodes[n]['childrenRadius'] + 100) {
                 result = true;
                 console.log('Nodes ' + node['name'] + " and " + nodes[n]['name'] + " are colliding");
@@ -765,6 +762,7 @@ function refreshRadius(node) {
     }
 }
 
+// Moving of the nodes in case of overlapping
 function translateNodes(node) {
     var radius = node['data']['childrenRadius'];
     node['childrenRadius'] = radius;
@@ -789,11 +787,19 @@ function translateNodes(node) {
     }
 }
 
+// Get actual depth of the whole tree
 function refreshDepth() {
     depth = 0;
     for(var i = 0; i < nodes.length; i++){
         if(nodes[i]['depth'] > depth){
             depth = nodes[i]['depth'];
         }
+    }
+}
+
+function computeDelimiter() {
+    delimiter = dataset.length / 650;
+    if(delimiter < 1){
+        delimiter = 1;
     }
 }
